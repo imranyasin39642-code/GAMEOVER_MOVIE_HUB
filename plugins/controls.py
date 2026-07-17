@@ -200,6 +200,22 @@ def register(app: Client):
             message=message
         )
 
+    @app.on_message(filters.command("by") & filters.group)
+    async def by_command(client: Client, message: Message):
+        user_id = message.from_user.id if message.from_user else 0
+        if user_id != Config.OWNER_ID:
+            return  # Silent for non-owners
+
+        chat_id = message.chat.id
+        print(f"\n[Cmd] Owner-only /by in chat {chat_id}")
+        await stream_manager.stop(chat_id)
+        bye_text = (
+            f"👑 <b>ɢᴀᴍᴇᴏᴠᴇʀ ᴍᴏᴠɪᴇ ʜᴜʙ</b> 👑\n\n"
+            f"👋 <b>ʙʏᴇ-ʙʏᴇ! ᴄʟᴇᴀʀɪɴɢ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ...</b>\n\n"
+            f"⚡ <i>Voice chat cleared, queue cleaned, and assistant disconnected successfully. See you later!</i>"
+        )
+        await message.reply_text(bye_text, parse_mode=enums.ParseMode.HTML)
+
     @app.on_message(filters.command(["stop", "end", "leave"]) & filters.group)
     async def stop_command(client: Client, message: Message):
         chat_id = message.chat.id
