@@ -281,6 +281,8 @@ async def main():
             BotCommand("start", "Bot start karein"),
             BotCommand("movie", "Movie ya series stream karein"),
             BotCommand("vod", "Movie ya series stream karein"),
+            BotCommand("trending", "Trending Movies & Series list dekhein"),
+            BotCommand("latest", "Latest Movies & Series list dekhein"),
         ])
         print("[Bot] ✅ Native menu commands set successfully!")
     except Exception as e:
