@@ -266,7 +266,7 @@ async def get_trending_hindi_panel(allowed_uid: int) -> tuple:
 
 def register(app: Client):
 
-    @app.on_message(filters.command(["trending", "latest"]) & (filters.group | filters.private))
+    @app.on_message(filters.command(["trending", "latest"]) & filters.group)
     async def trending_command(client: Client, message: Message):
         chat_id = message.chat.id
         user = message.from_user
@@ -280,7 +280,7 @@ def register(app: Client):
             print(f"[MOVIES Engine] Trending command error: {e}")
             await safe_edit(status_msg, f"{ROYAL_HEADER}❌ <b>Error:</b> <code>{str(e)}</code>")
 
-    @app.on_message(filters.command("random") & (filters.group | filters.private))
+    @app.on_message(filters.command("random") & filters.group)
     async def random_command(client: Client, message: Message):
         chat_id = message.chat.id
         user = message.from_user
@@ -335,7 +335,7 @@ def register(app: Client):
             print(f"[MOVIES Engine] Random command error: {e}")
             await safe_edit(status_msg, f"{ROYAL_HEADER}❌ <b>Error:</b> <code>{str(e)}</code>")
 
-    @app.on_message(filters.command("history") & (filters.group | filters.private))
+    @app.on_message(filters.command("history") & filters.group)
     async def history_command(client: Client, message: Message):
         chat_id = message.chat.id
         user = message.from_user
@@ -377,7 +377,7 @@ def register(app: Client):
             print(f"[MOVIES Engine] History command error: {e}")
             await safe_edit(status_msg, f"{ROYAL_HEADER}❌ <b>Error:</b> <code>{str(e)}</code>")
 
-    @app.on_message(filters.command("request") & (filters.group | filters.private))
+    @app.on_message(filters.command("request") & filters.group)
     async def request_command(client: Client, message: Message):
         chat_id = message.chat.id
         user = message.from_user
