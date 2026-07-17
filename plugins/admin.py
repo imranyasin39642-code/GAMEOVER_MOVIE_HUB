@@ -519,3 +519,68 @@ def register(app: Client):
                 ),
                 message_id=query.message.id
             )
+
+    @app.on_callback_query(filters.regex(r"^REQ\|"))
+    async def request_action_callback(client: Client, query: CallbackQuery):
+        user_id = query.from_user.id if query.from_user else 0
+        if user_id not in (Config.OWNER_ID, 6805412676) and not is_sudo_user(user_id):
+            await query.answer("⚠️ Access Denied!", show_alert=True)
+            return
+            
+        parts = query.data.split("|")
+        action = parts[1]
+        req_id = int(parts[2])
+        
+        try:
+            await query.answer()
+        except:
+            pass
+            
+        from core.db import get_movie_request, update_request_status, delete_movie_request
+        req = get_movie_request(req_id)
+        if not req:
+            await query.answer("❌ Request details not found (already deleted).", show_alert=True)
+            await query.message.delete()
+            return
+            
+        if action == "add":
+            # Update status in db
+            update_request_status(req_id, "Completed")
+            
+            # Edit Owner's message to reflect completed status
+            alert_caption = (
+                f"{ROYAL_HEADER}"
+                f"👥 <b>ᴍᴏᴠɪᴇ ʀᴇǫᴜᴇsᴛ ᴀᴅᴅᴇᴅ!</b>\n\n"
+                f"🎬 <b>{req['movie_name']}</b>\n"
+                f"👤 <b>User:</b> {req['first_name']} (@{req['username'] or 'N/A'}) [ID: <code>{req['user_id']}</code>]\n"
+                f"🏠 <b>Chat:</b> {req['chat_title']} [ID: <code>{req['chat_id']}</code>]\n"
+                f"⏳ <b>Status:</b> ✅ Completed / Added"
+            )
+            await send_styled(client=client, chat_id=query.message.chat.id, text=alert_caption, message_id=query.message.id)
+            
+            # Send notification to the chat where the request originated!
+            notify_text = (
+                f"{ROYAL_HEADER}"
+                f"🎉 <b>ʀᴇǫᴜᴇsᴛ ᴄᴏᴍᴘʟᴇᴛᴇᴅ!</b>\n\n"
+                f"Aapki requested movie 🎬 <b>{req['movie_name']}</b> ab platform par available hai! 😍\n\n"
+                f"Play karne ke liye abhi click karein:\n"
+                f"👉 <code>/movie {req['movie_name']}</code>"
+            )
+            try:
+                await client.send_message(chat_id=req["chat_id"], text=notify_text, parse_mode=enums.ParseMode.HTML)
+            except Exception as notify_err:
+                print(f"[Admin Plugin] Failed to send notification to chat {req['chat_id']}: {notify_err}")
+                
+        elif action == "reject":
+            # Delete request from db
+            delete_movie_request(req_id)
+            
+            # Edit Owner's message to reflect deleted status
+            alert_caption = (
+                f"{ROYAL_HEADER}"
+                f"👥 <b>ᴍᴏᴠɪᴇ ʀᴇǫᴜᴇsᴛ ᴅᴇʟᴇᴛᴇᴅ!</b>\n\n"
+                f"🎬 <b>{req['movie_name']}</b>\n"
+                f"👤 <b>User:</b> {req['first_name']} (@{req['username'] or 'N/A'})\n"
+                f"⏳ <b>Status:</b> ❌ Rejected / Deleted"
+            )
+            await send_styled(client=client, chat_id=query.message.chat.id, text=alert_caption, message_id=query.message.id)

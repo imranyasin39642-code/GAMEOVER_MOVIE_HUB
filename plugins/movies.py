@@ -377,6 +377,64 @@ def register(app: Client):
             print(f"[MOVIES Engine] History command error: {e}")
             await safe_edit(status_msg, f"{ROYAL_HEADER}❌ <b>Error:</b> <code>{str(e)}</code>")
 
+    @app.on_message(filters.command("request") & (filters.group | filters.private))
+    async def request_command(client: Client, message: Message):
+        chat_id = message.chat.id
+        user = message.from_user
+        user_id = user.id if user else 0
+        if len(message.command) < 2:
+            await message.reply_text(
+                f"{ROYAL_HEADER}"
+                "❌ <b>Aapne movie ya series ka naam nahi likha!</b>\n"
+                "Example: `/request The Boys Season 4`",
+                parse_mode=enums.ParseMode.HTML
+            )
+            return
+        movie_name = " ".join(message.command[1:])
+        chat_title = message.chat.title if message.chat.title else "Private Message"
+        try:
+            from core.db import add_movie_request
+            req_id = add_movie_request(
+                user_id=user_id,
+                username=user.username if user and user.username else "",
+                first_name=user.first_name if user and user.first_name else "",
+                chat_id=chat_id,
+                chat_title=chat_title,
+                movie_name=movie_name
+            )
+            # Direct alert to owner
+            owner_id = Config.OWNER_ID or 6805412676
+            alert_caption = (
+                f"{ROYAL_HEADER}"
+                f"👥 <b>ɴᴇᴡ ᴍᴏᴠɪᴇ ʀᴇǫᴜᴇsᴛ!</b>\n"
+                f"<i>User ne ek movie request ki hai:</i>\n\n"
+                f"🎬 <b>{movie_name}</b>\n"
+                f"👤 <b>User:</b> {user.first_name} (@{user.username or 'N/A'}) [ID: <code>{user_id}</code>]\n"
+                f"🏠 <b>Chat:</b> {chat_title} [ID: <code>{chat_id}</code>]\n"
+                f"🆔 <b>Request ID:</b> <code>#{req_id}</code>"
+            )
+            alert_keyboard = InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("✅ ADDED / COMPLETED", callback_data=f"REQ|add|{req_id}", style="success"),
+                    InlineKeyboardButton("❌ REJECT / DELETE", callback_data=f"REQ|reject|{req_id}", style="danger")
+                ]
+            ])
+            try:
+                from bot import send_styled
+                await send_styled(chat_id=owner_id, text=alert_caption, markup=alert_keyboard)
+            except Exception as pm_err:
+                print(f"[Movies Engine] Failed to alert owner in PM: {pm_err}")
+                
+            await message.reply_text(
+                f"{ROYAL_HEADER}"
+                f"✅ <b>ʀᴇǫᴜᴇsᴛ sᴜʙᴍɪᴛᴛᴇᴅ!</b>\n\n"
+                f"Aapki request <code>{movie_name}</code> humare record mein save ho gayi hai aur admin ko send kar di gayi hai! 👍",
+                parse_mode=enums.ParseMode.HTML
+            )
+        except Exception as e:
+            print(f"[MOVIES Engine] Request command error: {e}")
+            await message.reply_text(f"{ROYAL_HEADER}❌ <b>Error:</b> <code>{str(e)}</code>")
+
     @app.on_message(filters.command(["movie", "vod"]) & filters.group)
     async def movie_command(client: Client, message: Message):
         chat_id = message.chat.id

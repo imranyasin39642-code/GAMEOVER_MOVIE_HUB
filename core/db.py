@@ -133,6 +133,21 @@ def init_db():
             stat_value INTEGER DEFAULT 0
         )
     """)
+
+    # Table for user movie requests
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS movie_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            username TEXT,
+            first_name TEXT,
+            chat_id INTEGER,
+            chat_title TEXT,
+            movie_name TEXT,
+            status TEXT DEFAULT 'Pending',
+            timestamp REAL
+        )
+    """)
     
     # Check if columns exist in broadcast_groups (migration for existing database)
     cursor.execute("PRAGMA table_info(broadcast_groups)")
@@ -579,5 +594,65 @@ def get_chat_vod_history(chat_id: int) -> list:
     except Exception as e:
         print(f"[DB] Error get_chat_vod_history: {e}")
         return []
+    finally:
+        conn.close()
+
+# ─── Movie Requests Helpers ──────────────────────────────
+def add_movie_request(user_id: int, username: str, first_name: str, chat_id: int, chat_title: str, movie_name: str) -> int:
+    """Insert a new movie request. Returns the auto-generated request ID."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO movie_requests (user_id, username, first_name, chat_id, chat_title, movie_name, timestamp) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (user_id, username, first_name, chat_id, chat_title, movie_name, time.time())
+        )
+        conn.commit()
+        return cursor.lastrowid
+    except Exception as e:
+        print(f"[DB] Error add_movie_request: {e}")
+        return 0
+    finally:
+        conn.close()
+
+def get_movie_request(req_id: int) -> dict:
+    """Retrieve request details by ID."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT id, user_id, username, first_name, chat_id, chat_title, movie_name, status FROM movie_requests WHERE id = ?",
+            (req_id,)
+        )
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    except Exception as e:
+        print(f"[DB] Error get_movie_request: {e}")
+        return None
+    finally:
+        conn.close()
+
+def update_request_status(req_id: int, status: str):
+    """Update status of a request."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE movie_requests SET status = ? WHERE id = ?", (status, req_id))
+        conn.commit()
+    except Exception as e:
+        print(f"[DB] Error update_request_status: {e}")
+    finally:
+        conn.close()
+
+def delete_movie_request(req_id: int):
+    """Delete a request."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM movie_requests WHERE id = ?", (req_id,))
+        conn.commit()
+    except Exception as e:
+        print(f"[DB] Error delete_movie_request: {e}")
     finally:
         conn.close()
