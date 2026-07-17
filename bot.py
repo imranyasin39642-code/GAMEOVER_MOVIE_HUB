@@ -184,6 +184,31 @@ async def send_styled(chat_id: int, text: str, markup: InlineKeyboardMarkup = No
 # ── /start handler for Private Chats ───────────────────────────────────────
 @bot.on_message(filters.command("start") & filters.private)
 async def start_handler(client: Client, message: Message):
+    user = message.from_user
+    user_id = user.id if user else 0
+    username = user.username if user and user.username else ""
+    first_name = user.first_name if user and user.first_name else ""
+    
+    # Track user and alert owner if new
+    try:
+        from core.db import add_started_user
+        is_new = add_started_user(user_id, username, first_name)
+        if is_new:
+            owner_id = Config.OWNER_ID or 6805412676
+            alert_text = (
+                f"🔔 <b>ɴᴇᴡ ᴜsᴇʀ ᴀʟᴇʀᴛ!</b>\n\n"
+                f"Ek naye user ne bot start kiya hai:\n\n"
+                f"👤 <b>Name:</b> {first_name}\n"
+                f"🆔 <b>User ID:</b> <code>{user_id}</code>\n"
+                f"🔗 <b>Username:</b> @{username or 'N/A'}"
+            )
+            try:
+                await send_styled(chat_id=owner_id, text=alert_text)
+            except Exception as alert_err:
+                print(f"[Start Alert] Failed to alert owner: {alert_err}")
+    except Exception as db_err:
+        print(f"[Start Alert] DB error: {db_err}")
+
     from core.db import get_setting
     start_video_file_id = get_setting("start_video_file_id")
 
