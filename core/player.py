@@ -845,7 +845,8 @@ class PlayerManager:
         else:
             try:
                 member = await client.get_chat_member(chat_id, user_id)
-                if member.status in (enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER):
+                # Restrict direct skip override to the Group Owner (Creator) only. Regular admins must vote.
+                if member.status == enums.ChatMemberStatus.OWNER:
                     is_vip = True
             except Exception:
                 pass
@@ -853,12 +854,12 @@ class PlayerManager:
         if is_vip:
             if query:
                 try:
-                    await query.answer("👑 Admin/Requester override: Skipping track...")
+                    await query.answer("👑 Owner/Requester override: Skipping track...")
                 except Exception:
                     pass
             elif message:
                 try:
-                    await message.reply_text("👑 <b>Admin/Requester override: Skipping track...</b>")
+                    await message.reply_text("👑 <b>Owner/Requester override: Skipping track...</b>")
                 except Exception:
                     pass
             await self.skip(chat_id)
