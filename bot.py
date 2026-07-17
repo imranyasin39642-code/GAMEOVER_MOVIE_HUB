@@ -51,6 +51,20 @@ class ErrorsModuleWrapper:
 
 sys.modules["pyrogram.errors"] = ErrorsModuleWrapper(pyrogram.errors)
 
+# Patch pyrogram JoinGroupCall and JoinGroupCallPresentation to drop unsupported arguments (like public_key)
+import pyrogram.raw.functions.phone
+for call_class_name in ("JoinGroupCall", "JoinGroupCallPresentation"):
+    call_cls = getattr(pyrogram.raw.functions.phone, call_class_name, None)
+    if call_cls and hasattr(call_cls, "__init__"):
+        orig_init = call_cls.__init__
+        def make_patched_init(old_init):
+            def patched_init(self, *args, **kwargs):
+                sig = inspect.signature(old_init)
+                clean_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
+                old_init(self, *args, **clean_kwargs)
+            return patched_init
+        call_cls.__init__ = make_patched_init(orig_init)
+
 from pyrogram import Client, idle, enums, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from config import Config
