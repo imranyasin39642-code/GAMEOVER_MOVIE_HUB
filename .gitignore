@@ -1,0 +1,21 @@
+# Environment secrets
+.env
+
+# Pyrogram session
+*.session
+*.session-journal
+
+# SQLite database
+*.sqlite3
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Caching downloads
+downloads/
