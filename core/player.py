@@ -838,7 +838,7 @@ class PlayerManager:
         from core.db import is_sudo_user
         # 1. VIP override check
         is_vip = False
-        if user_id in (Config.OWNER_ID, 6805412676, 7478754863) or is_sudo_user(user_id):
+        if user_id in (Config.OWNER_ID, 6805412676) or is_sudo_user(user_id):
             is_vip = True
         elif getattr(current, "requester_id", 0) != 0 and user_id == current.requester_id:
             is_vip = True
