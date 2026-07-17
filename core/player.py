@@ -610,20 +610,21 @@ class PlayerManager:
                     'aresample=48000"'
                 )
             else:
-                # Video mode (Movies & TV): Cinema sound leveling (dialogue boost, compression + volume gain, no heavy bass)
-                # Lower latency, smooth release (100ms) to prevent audio/video sync desync
+                # Video mode (Movies & TV): Cinema master sound leveling
+                # Dialogue presence boost (3kHz), rumble highpass cut (40Hz), compression + volume gain, no heavy bass distortion
                 audio_filter = (
-                    '-af "equalizer=f=60:width_type=h:width=50:g=3,'
-                    'acompressor=threshold=0.15:ratio=4:attack=5:release=100:makeup=2.0,'
-                    'volume=1.8,alimiter=limit=0.90,'
-                    'aresample=async=1:min_comp=0.001:max_soft_comp=5"'
+                    '-af "highpass=f=40,equalizer=f=150:width_type=h:width=50:g=-2,'
+                    'equalizer=f=3000:width_type=h:width=1000:g=3.5,'
+                    'acompressor=threshold=-12dB:ratio=3:attack=5:release=150:makeup=3.5dB,'
+                    'volume=2.2,alimiter=limit=0.95,'
+                    'aresample=48000:async=1:min_comp=0.001:max_soft_comp=10"'
                 )
 
             def get_stream(video_required: bool = True):
                 v_flags = MediaStream.Flags.REQUIRED if video_required else MediaStream.Flags.IGNORE
                 if video_required:
-                    # Video mode: standard threading for AV sync with real-time reading (-re) and timestamp reconstruction (-fflags +genpts)
-                    base_flags = f"--base ---start {seek_str}-re -fflags +genpts -analyzeduration 10M -probesize 10M -threads 4 -thread_queue_size 2048 -vsync cfr "
+                    # Video mode: Expanded to 8 threads and 8192 queue buffer for high spec 16GB RAM VPS to ensure zero lag
+                    base_flags = f"--base ---start {seek_str}-re -fflags +genpts -analyzeduration 15M -probesize 15M -threads 8 -thread_queue_size 8192 -vsync cfr "
                 else:
                     # Audio-only: minimal FFmpeg flags — 1 thread, tiny probe, no vsync = lowest CPU + latency
                     base_flags = f"--base ---start {seek_str}-analyzeduration 2M -probesize 2M -threads 1 -thread_queue_size 256 "
