@@ -212,6 +212,15 @@ async def start_handler(client: Client, message: Message):
     from core.db import get_setting
     start_video_file_id = get_setting("start_video_file_id")
 
+    owner_id = Config.OWNER_ID or 6805412676
+    owner_link = f"tg://user?id={owner_id}"
+    try:
+        owner_user = await client.get_users(owner_id)
+        if owner_user and owner_user.username:
+            owner_link = f"https://t.me/{owner_user.username}"
+    except Exception:
+        pass
+
     caption_text = (
         "👑 <b>ɢᴀᴍᴇᴏᴠᴇʀ ᴍᴏᴠɪᴇ ʜᴜʙ</b> 👑\n\n"
         "🎬 Telegram ka sabse smart <b>Movie & Series</b> voice chat streaming bot!\n\n"
@@ -221,7 +230,7 @@ async def start_handler(client: Client, message: Message):
         "📺 <b>Examples:</b>\n"
         "• <code>/movie Avengers</code>\n"
         "• <code>/movie The Boys S2</code>\n\n"
-        f"👑 <b>Developer:</b> <a href=\"tg://user?id={Config.OWNER_ID}\">GAMEOVER</a>"
+        f"👑 <b>Developer:</b> <a href=\"{owner_link}\">GAMEOVER</a>"
     )
 
     markup = InlineKeyboardMarkup([
