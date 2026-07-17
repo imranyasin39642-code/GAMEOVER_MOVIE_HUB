@@ -335,6 +335,48 @@ def register(app: Client):
             print(f"[MOVIES Engine] Random command error: {e}")
             await safe_edit(status_msg, f"{ROYAL_HEADER}❌ <b>Error:</b> <code>{str(e)}</code>")
 
+    @app.on_message(filters.command("history") & (filters.group | filters.private))
+    async def history_command(client: Client, message: Message):
+        chat_id = message.chat.id
+        user = message.from_user
+        user_id = user.id if user else 0
+        print(f"[MOVIES Engine] History command triggered by user {user_id} in chat {chat_id}")
+        status_msg = await show_loading_animation(chat_id, "Fetching watch history")
+        try:
+            from core.db import get_chat_vod_history
+            items = get_chat_vod_history(chat_id)
+            caption = (
+                f"{ROYAL_HEADER}"
+                f"⏳ <b>ᴘʟᴀʏʙᴀᴄᴋ ʜɪsᴛᴏʀʏ</b>\n"
+                f"<i>Aapki chat ki recent movies aur saved progress ki list:</i>\n\n"
+            )
+            if not items:
+                caption += "❌ <i>Is chat ki abhi koi watch history nahi mili.</i>"
+            else:
+                def format_time(secs: int) -> str:
+                    h = secs // 3600
+                    m = (secs % 3600) // 60
+                    s = secs % 60
+                    return f"{h:02d}:{m:02d}:{s:02d}" if h > 0 else f"{m:02d}:{s:02d}"
+
+                for idx, item in enumerate(items, 1):
+                    time_str = format_time(item["progress_seconds"])
+                    suffix = f" S{item['season']}E{item['episode']}" if item["season"] > 0 else ""
+                    caption += (
+                        f"{idx}. 🎬 <b>{item['title']}{suffix}</b>\n"
+                        f"   ⏱ <b>Position:</b> <code>{time_str}</code>\n"
+                        f"   👉 <code>/movie {item['title']}</code>\n\n"
+                    )
+            keyboard = InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("❌ CLOSE", callback_data=f"VOD|trend_close|{user_id}", style="danger")
+                ]
+            ])
+            await safe_edit(status_msg, caption, keyboard)
+        except Exception as e:
+            print(f"[MOVIES Engine] History command error: {e}")
+            await safe_edit(status_msg, f"{ROYAL_HEADER}❌ <b>Error:</b> <code>{str(e)}</code>")
+
     @app.on_message(filters.command(["movie", "vod"]) & filters.group)
     async def movie_command(client: Client, message: Message):
         chat_id = message.chat.id

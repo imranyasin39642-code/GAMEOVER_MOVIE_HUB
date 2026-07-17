@@ -284,6 +284,7 @@ async def main():
             BotCommand("trending", "Trending Movies & Series list dekhein"),
             BotCommand("latest", "Latest Movies & Series list dekhein"),
             BotCommand("random", "Random Hindi movie stream karein (Surprise Me)"),
+            BotCommand("history", "Recent watch history aur saved progress dekhein"),
         ])
         print("[Bot] ✅ Native menu commands set successfully!")
     except Exception as e:

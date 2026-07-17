@@ -563,3 +563,21 @@ def save_cached_trending_items(category: str, items: list):
         print(f"[DB] Error save_cached_trending_items: {e}")
     finally:
         conn.close()
+
+def get_chat_vod_history(chat_id: int) -> list:
+    """Retrieve all VOD progress items for a given chat, ordered by last_played descending."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT subject_id, title, season, episode, progress_seconds FROM vod_history "
+            "WHERE chat_id = ? ORDER BY last_played DESC LIMIT 10",
+            (chat_id,)
+        )
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        print(f"[DB] Error get_chat_vod_history: {e}")
+        return []
+    finally:
+        conn.close()
