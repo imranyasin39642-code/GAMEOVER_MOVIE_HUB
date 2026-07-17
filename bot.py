@@ -28,7 +28,8 @@ class RawTypesModuleWrapper:
             setattr(self._original_module, name, DummyClass)
             return DummyClass
 
-sys.modules["pyrogram.raw.types"] = RawTypesModuleWrapper(pyrogram.raw.types)
+if not isinstance(pyrogram.raw.types, RawTypesModuleWrapper):
+    sys.modules["pyrogram.raw.types"] = RawTypesModuleWrapper(pyrogram.raw.types)
 
 class ErrorsModuleWrapper:
     def __init__(self, original_module):
@@ -49,13 +50,14 @@ class ErrorsModuleWrapper:
             setattr(self._original_module, name, DummyError)
             return DummyError
 
-sys.modules["pyrogram.errors"] = ErrorsModuleWrapper(pyrogram.errors)
+if not isinstance(pyrogram.errors, ErrorsModuleWrapper):
+    sys.modules["pyrogram.errors"] = ErrorsModuleWrapper(pyrogram.errors)
 
 # Patch pyrogram JoinGroupCall and JoinGroupCallPresentation to drop unsupported arguments (like public_key)
 import pyrogram.raw.functions.phone
 for call_class_name in ("JoinGroupCall", "JoinGroupCallPresentation"):
     call_cls = getattr(pyrogram.raw.functions.phone, call_class_name, None)
-    if call_cls and hasattr(call_cls, "__init__"):
+    if call_cls and hasattr(call_cls, "__init__") and not getattr(call_cls, "__patched__", False):
         orig_init = call_cls.__init__
         def make_patched_init(old_init):
             def patched_init(self, *args, **kwargs):
@@ -64,6 +66,7 @@ for call_class_name in ("JoinGroupCall", "JoinGroupCallPresentation"):
                 old_init(self, *args, **clean_kwargs)
             return patched_init
         call_cls.__init__ = make_patched_init(orig_init)
+        call_cls.__patched__ = True
 
 from pyrogram import Client, idle, enums, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
