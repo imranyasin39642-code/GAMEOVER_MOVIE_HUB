@@ -145,6 +145,19 @@ def init_db():
     # Insert total_hits default if not exists
     cursor.execute("INSERT OR IGNORE INTO global_stats (stat_key, stat_value) VALUES ('total_hits', 0)")
     
+    # Table for trending cache
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS trending_cache (
+            category TEXT,
+            subject_id INTEGER,
+            title TEXT,
+            release_date TEXT,
+            rating REAL,
+            has_hindi INTEGER DEFAULT 0,
+            PRIMARY KEY (category, subject_id)
+        )
+    """)
+    
     conn.commit()
     conn.close()
 
@@ -505,5 +518,48 @@ def clear_vod_progress(chat_id: int, subject_id: int, season: int, episode: int)
         conn.commit()
     except Exception as e:
         print(f"[DB] Error clear_vod_progress: {e}")
+    finally:
+        conn.close()
+
+# ─── Trending Cache Helpers ─────────────────────────────
+def get_cached_trending_items(category: str) -> list:
+    """Retrieve all cached trending movies/series for a given category."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT subject_id, title, release_date, rating, has_hindi FROM trending_cache WHERE category = ?",
+            (category,)
+        )
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        print(f"[DB] Error get_cached_trending_items: {e}")
+        return []
+    finally:
+        conn.close()
+
+def save_cached_trending_items(category: str, items: list):
+    """Overwrite the cached trending list for a category."""
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM trending_cache WHERE category = ?", (category,))
+        for item in items:
+            cursor.execute(
+                "INSERT INTO trending_cache (category, subject_id, title, release_date, rating, has_hindi) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    category,
+                    item["subject_id"],
+                    item["title"],
+                    item.get("release_date", ""),
+                    item.get("rating", 0.0),
+                    1 if item.get("has_hindi", False) else 0
+                )
+            )
+        conn.commit()
+    except Exception as e:
+        print(f"[DB] Error save_cached_trending_items: {e}")
     finally:
         conn.close()

@@ -30,6 +30,7 @@ from core.vod_scraper import (
     SubjectType,
 )
 from moviebox_api.v2.models import SearchResultsItem
+from core.trending_manager import get_trending_list
 
 # Global Video-On-Demand sessions tracker
 vod_sessions: dict[int, dict] = {}
@@ -144,7 +145,140 @@ async def select_vod_item(chat_id: int, item: SearchResultsItem, status_msg, use
         ])
         await safe_edit(status_msg, caption, keyboard)
 
+
+async def show_loading_animation(chat_id: int, base_text: str) -> tuple:
+    """Creates a message and animates loading dots for smooth, responsive UX."""
+    from bot import send_styled
+    msg_data = await send_styled(
+        chat_id=chat_id,
+        text=f"{ROYAL_HEADER}🔍 <b>{base_text}</b>"
+    )
+    msg_id = msg_data.get("result", {}).get("message_id")
+    msg_tuple = (chat_id, msg_id)
+    
+    # Run a quick 1.5-second dots animation
+    for i in range(1, 4):
+        await asyncio.sleep(0.4)
+        dots = "." * i
+        await safe_edit(msg_tuple, f"{ROYAL_HEADER}🔍 <b>{base_text}{dots}</b>")
+        
+    return msg_tuple
+
+
+async def get_trending_movies_panel(allowed_uid: int) -> tuple:
+    items = await get_trending_list("trending_movies")
+    caption = (
+        f"{ROYAL_HEADER}"
+        f"🔥 <b>ᴛᴏᴘ ᴛʀᴇɴᴅɪɴɢ ᴍᴏᴠɪᴇs</b>\n"
+        f"<i>Tap on a command to copy and search:</i>\n\n"
+    )
+    
+    if not items:
+        caption += "❌ <i>No trending movies found.</i>"
+    else:
+        for idx, item in enumerate(items, 1):
+            h_tag = " [Hindi Dubbed 🇮🇳]" if item["has_hindi"] else ""
+            caption += (
+                f"{idx}. 🎬 <b>{item['title']}</b> ({item['release_date']}) - ⭐ {item['rating']}{h_tag}\n"
+                f"   👉 <code>/movie {item['title']}</code>\n\n"
+            )
+            
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("📺 SHOW SERIES", callback_data=f"VOD|trend_series|{allowed_uid}", style="primary"),
+            InlineKeyboardButton("🇮🇳 HINDI ONLY", callback_data=f"VOD|trend_hindi|{allowed_uid}", style="success")
+        ],
+        [
+            InlineKeyboardButton("❌ CLOSE", callback_data=f"VOD|trend_close|{allowed_uid}", style="danger")
+        ]
+    ])
+    return caption, keyboard
+
+
+async def get_trending_series_panel(allowed_uid: int) -> tuple:
+    items = await get_trending_list("trending_series")
+    caption = (
+        f"{ROYAL_HEADER}"
+        f"📺 <b>ᴛᴏᴘ ᴛʀᴇɴᴅɪɴɢ sᴇʀɪᴇs</b>\n"
+        f"<i>Tap on a command to copy and search:</i>\n\n"
+    )
+    
+    if not items:
+        caption += "❌ <i>No trending series found.</i>"
+    else:
+        for idx, item in enumerate(items, 1):
+            h_tag = " [Hindi Dubbed 🇮🇳]" if item["has_hindi"] else ""
+            caption += (
+                f"{idx}. 📺 <b>{item['title']}</b> ({item['release_date']}) - ⭐ {item['rating']}{h_tag}\n"
+                f"   👉 <code>/movie {item['title']}</code>\n\n"
+            )
+            
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🎥 SHOW MOVIES", callback_data=f"VOD|trend_movies|{allowed_uid}", style="primary"),
+            InlineKeyboardButton("🇮🇳 HINDI ONLY", callback_data=f"VOD|trend_hindi|{allowed_uid}", style="success")
+        ],
+        [
+            InlineKeyboardButton("❌ CLOSE", callback_data=f"VOD|trend_close|{allowed_uid}", style="danger")
+        ]
+    ])
+    return caption, keyboard
+
+
+async def get_trending_hindi_panel(allowed_uid: int) -> tuple:
+    movies = await get_trending_list("trending_movies")
+    series = await get_trending_list("trending_series")
+    
+    hindi_items = []
+    for m in movies:
+        if m["has_hindi"]:
+            hindi_items.append((m, "🎬"))
+    for s in series:
+        if s["has_hindi"]:
+            hindi_items.append((s, "📺"))
+            
+    caption = (
+        f"{ROYAL_HEADER}"
+        f"🇮🇳 <b>ʜɪɴᴅɪ ᴅᴜʙʙᴇᴅ ᴛʀᴇɴᴅɪɴɢ</b>\n"
+        f"<i>Tap on a command to copy and search:</i>\n\n"
+    )
+    
+    if not hindi_items:
+        caption += "❌ <i>No Hindi dubbed trending titles found.</i>"
+    else:
+        for idx, (item, icon) in enumerate(hindi_items, 1):
+            caption += (
+                f"{idx}. {icon} <b>{item['title']}</b> ({item['release_date']}) - ⭐ {item['rating']}\n"
+                f"   👉 <code>/movie {item['title']}</code>\n\n"
+            )
+            
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🎥 SHOW MOVIES", callback_data=f"VOD|trend_movies|{allowed_uid}", style="primary"),
+            InlineKeyboardButton("📺 SHOW SERIES", callback_data=f"VOD|trend_series|{allowed_uid}", style="primary")
+        ],
+        [
+            InlineKeyboardButton("❌ CLOSE", callback_data=f"VOD|trend_close|{allowed_uid}", style="danger")
+        ]
+    ])
+    return caption, keyboard
+
+
 def register(app: Client):
+
+    @app.on_message(filters.command(["trending", "latest"]) & (filters.group | filters.private))
+    async def trending_command(client: Client, message: Message):
+        chat_id = message.chat.id
+        user = message.from_user
+        user_id = user.id if user else 0
+        print(f"[MOVIES Engine] Trending command triggered by user {user_id} in chat {chat_id}")
+        status_msg = await show_loading_animation(chat_id, "Fetching Trending List")
+        try:
+            caption, keyboard = await get_trending_movies_panel(user_id)
+            await safe_edit(status_msg, caption, keyboard)
+        except Exception as e:
+            print(f"[MOVIES Engine] Trending command error: {e}")
+            await safe_edit(status_msg, f"{ROYAL_HEADER}❌ <b>Error:</b> <code>{str(e)}</code>")
 
     @app.on_message(filters.command(["movie", "vod"]) & filters.group)
     async def movie_command(client: Client, message: Message):
@@ -153,28 +287,25 @@ def register(app: Client):
         user_id = user.id if user else 0
 
         if len(message.command) < 2:
-            await message.reply_text(
+            caption = (
                 f"{ROYAL_HEADER}"
-                "❌ <b>Aapne movie ya series ka naam nahi likha!</b>\n"
-                "Example: `/movie Avengers` ya `/movie The Boys`",
-                parse_mode=enums.ParseMode.HTML
+                "🎬 <b>GameOver Movie Search Panel</b>\n\n"
+                "Aapne movie ya series ka naam nahi likha. Movie play karne ke liye `/movie Name` type karein.\n\n"
+                "Ya fir niche diye button par click karke <b>Trending & Latest Movies</b> check karein 👇"
             )
+            keyboard = InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("🔥 TRENDING MOVIES & SERIES", callback_data=f"VOD|trend_movies|{user_id}", style="success")
+                ]
+            ])
+            from bot import send_styled
+            await send_styled(chat_id=chat_id, text=caption, markup=keyboard)
             return
 
         query = " ".join(message.command[1:])
         print(f"[MOVIES Engine] Search request: '{query}' by user {user_id}")
 
-        from bot import send_styled
-        status_msg_data = await send_styled(
-            chat_id=chat_id,
-            text=(
-                f"{ROYAL_HEADER}"
-                f"🔍 <b>Aapki request par search ho rahi hai...</b>\n"
-                f"⏳ <i>MOVIES Engine ko check kiya ja raha hai, please wait...</i>"
-            )
-        )
-        status_msg_id = status_msg_data.get("result", {}).get("message_id")
-        status_msg = (chat_id, status_msg_id)
+        status_msg = await show_loading_animation(chat_id, "Searching")
 
         try:
             # Auto-Append Hindi behind the scenes
@@ -382,6 +513,29 @@ def register(app: Client):
         if allowed_uid != 0 and requester_id != allowed_uid:
             print(f"[MOVIES Engine DEBUG] Access denied: requester_id {requester_id} != allowed_uid {allowed_uid}")
             await query.answer("⚠️ Sirf wahi click kar sakta hai jisne search start kiya tha!", show_alert=True)
+            return
+
+        # Handle trending actions first (they don't require VOD search session data)
+        if action == "trend_movies":
+            caption, keyboard = await get_trending_movies_panel(allowed_uid)
+            await safe_edit(query.message, caption, keyboard)
+            return
+
+        elif action == "trend_series":
+            caption, keyboard = await get_trending_series_panel(allowed_uid)
+            await safe_edit(query.message, caption, keyboard)
+            return
+
+        elif action == "trend_hindi":
+            caption, keyboard = await get_trending_hindi_panel(allowed_uid)
+            await safe_edit(query.message, caption, keyboard)
+            return
+
+        elif action == "trend_close":
+            try:
+                await query.message.delete()
+            except Exception:
+                pass
             return
 
         session_data = vod_sessions.get(chat_id)
