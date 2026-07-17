@@ -68,6 +68,26 @@ for call_class_name in ("JoinGroupCall", "JoinGroupCallPresentation"):
         call_cls.__init__ = make_patched_init(orig_init)
         call_cls.__patched__ = True
 
+# Patch pyrogram.utils.get_peer_type to prevent ValueError crash in handle_updates on un-cached IDs
+import pyrogram.utils
+if not getattr(pyrogram.utils, "__patched__", False):
+    _orig_get_peer_type = pyrogram.utils.get_peer_type
+    def _patched_get_peer_type(peer_id: int) -> str:
+        try:
+            return _orig_get_peer_type(peer_id)
+        except ValueError:
+            # Safe fallback based on typical ID ranges:
+            # -100xxxxxx is channel/supergroup, -xxxxxx is group chat, positive is user
+            pid_str = str(peer_id)
+            if pid_str.startswith("-100"):
+                return "channel"
+            elif pid_str.startswith("-"):
+                return "chat"
+            else:
+                return "user"
+    pyrogram.utils.get_peer_type = _patched_get_peer_type
+    pyrogram.utils.__patched__ = True
+
 from pyrogram import Client, idle, enums, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from config import Config
