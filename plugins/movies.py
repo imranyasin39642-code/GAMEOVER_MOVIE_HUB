@@ -280,6 +280,61 @@ def register(app: Client):
             print(f"[MOVIES Engine] Trending command error: {e}")
             await safe_edit(status_msg, f"{ROYAL_HEADER}❌ <b>Error:</b> <code>{str(e)}</code>")
 
+    @app.on_message(filters.command("random") & (filters.group | filters.private))
+    async def random_command(client: Client, message: Message):
+        chat_id = message.chat.id
+        user = message.from_user
+        user_id = user.id if user else 0
+        print(f"[MOVIES Engine] Random command triggered by user {user_id} in chat {chat_id}")
+        status_msg = await show_loading_animation(chat_id, "Shuffling movie database")
+        try:
+            from core.random_manager import get_random_hindi_title
+            res = await get_random_hindi_title()
+            if not res:
+                await safe_edit(status_msg, f"{ROYAL_HEADER}❌ <b>Humein koi random movie nahi mili! Please dobara try karein.</b>")
+                return
+            vod_sessions[chat_id] = {
+                "query": res["title"],
+                "requester_id": user_id,
+                "requester_name": user.first_name if user and user.first_name else str(user_id),
+                "search_results": [res["item"]],
+                "session": res["session"],
+                "seasons": [],
+                "chosen_season": 1,
+                "chosen_episode": 1,
+                "current_item": res["item"],
+                "chosen_lang": "hi",
+                "title": res["title"]
+            }
+            m_type = "📺 Series" if res["is_series"] else "🎬 Movie"
+            caption = (
+                f"{ROYAL_HEADER}"
+                f"🎰 <b>sᴜʀᴘʀɪsᴇ ᴠɪᴅᴇᴏ ғᴏʀ ʏᴏᴜ!</b>\n"
+                f"<i>Aapke liye ek random blockbuster select ki gayi hai:</i>\n\n"
+                f"🎬 <b>{res['title']}</b> ({res['year']}) - ⭐ {res['rating']}\n"
+                f"📌 <b>Type:</b> {m_type}\n"
+                f"🇮🇳 <i>Hindi Dubbed Audio Available</i>\n\n"
+                f"👉 <i>Neeche play button click karke video chat mein instant stream chalu karein!</i>"
+            )
+            if res["is_series"]:
+                keyboard = InlineKeyboardMarkup([
+                    [
+                        InlineKeyboardButton("🟢 SELECT SEASON", callback_data=f"VOD|select|{user_id}|{res['item'].subjectId}", style="success"),
+                        InlineKeyboardButton("❌ CLOSE", callback_data=f"VOD|trend_close|{user_id}", style="danger")
+                    ]
+                ])
+            else:
+                keyboard = InlineKeyboardMarkup([
+                    [
+                        InlineKeyboardButton("🟢 PLAY MOVIE", callback_data=f"VOD|play_movie|{user_id}", style="success"),
+                        InlineKeyboardButton("❌ CLOSE", callback_data=f"VOD|trend_close|{user_id}", style="danger")
+                    ]
+                ])
+            await safe_edit(status_msg, caption, keyboard)
+        except Exception as e:
+            print(f"[MOVIES Engine] Random command error: {e}")
+            await safe_edit(status_msg, f"{ROYAL_HEADER}❌ <b>Error:</b> <code>{str(e)}</code>")
+
     @app.on_message(filters.command(["movie", "vod"]) & filters.group)
     async def movie_command(client: Client, message: Message):
         chat_id = message.chat.id
