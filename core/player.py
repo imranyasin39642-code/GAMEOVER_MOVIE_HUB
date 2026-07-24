@@ -625,8 +625,7 @@ class PlayerManager:
                 v_flags = MediaStream.Flags.REQUIRED if video_required else MediaStream.Flags.IGNORE
                 if video_required:
                     # Movie/VOD mode: 4 threads, tight queue, +genpts for PTS reconstruction = zero lip-sync drift
-                    # -vsync passthrough: do NOT alter frame timestamps (cfr causes sync drift on VBR sources)
-                    base_flags = f"--base ---start {seek_str}-fflags +genpts -analyzeduration 8M -probesize 8M -threads 4 -thread_queue_size 2048 -vsync passthrough "
+                    base_flags = f"--base ---start {seek_str}-fflags +genpts -analyzeduration 8M -probesize 8M -threads 4 -thread_queue_size 2048 -vsync cfr "
                 else:
                     # Audio-only: minimal FFmpeg flags — 2 threads, tiny probe = low CPU
                     base_flags = f"--base ---start {seek_str}-analyzeduration 2M -probesize 2M -threads 2 -thread_queue_size 512 "
