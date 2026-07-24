@@ -8,3 +8,4 @@ python-dotenv
 TgCrypto
 requests
 psutil
+throttlebuster
