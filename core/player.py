@@ -439,6 +439,12 @@ class PlayerManager:
         Uses local files to eliminate direct-link buffering issues.
         """
         try:
+            from core.db import is_group_bot_active
+            if not is_group_bot_active(chat_id):
+                print(f"[Player] Chat {chat_id} is disabled in /admin. Aborting playback silently.")
+                queue_manager.clear(chat_id)
+                return False
+
             self._cancel_idle_timer(chat_id)
 
             if not is_seek:
@@ -710,17 +716,6 @@ class PlayerManager:
                                 raise retry_play_err
                     except Exception as retry_err:
                         print(f"[Player] Retry play failed: {retry_err}")
-                        err_msg = (
-                            "❌ <b>ᴠᴏɪᴄᴇ ᴄʜᴀᴛ ɴᴏᴛ ᴀᴄᴛɪᴠᴇ!</b>\n"
-                            "Please start the voice/video chat in the group to begin streaming."
-                        )
-                        if "FLOOD_WAIT" in str(retry_err) or "flood" in str(retry_err).lower():
-                            err_msg = "❌ <b>Server is busy. Please try again shortly.</b>"
-                        if self.app:
-                            try:
-                                await self.app.send_message(chat_id, err_msg)
-                            except Exception:
-                                pass
                         queue_manager.clear(chat_id)
                         return False
 

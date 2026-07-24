@@ -269,6 +269,9 @@ def register(app: Client):
     @app.on_message(filters.command(["trending", "latest"]) & filters.group)
     async def trending_command(client: Client, message: Message):
         chat_id = message.chat.id
+        from core.db import is_group_bot_active
+        if not is_group_bot_active(chat_id):
+            return
         user = message.from_user
         user_id = user.id if user else 0
         print(f"[MOVIES Engine] Trending command triggered by user {user_id} in chat {chat_id}")
@@ -283,6 +286,9 @@ def register(app: Client):
     @app.on_message(filters.command("random") & filters.group)
     async def random_command(client: Client, message: Message):
         chat_id = message.chat.id
+        from core.db import is_group_bot_active
+        if not is_group_bot_active(chat_id):
+            return
         user = message.from_user
         user_id = user.id if user else 0
         print(f"[MOVIES Engine] Random command triggered by user {user_id} in chat {chat_id}")
@@ -338,6 +344,9 @@ def register(app: Client):
     @app.on_message(filters.command("history") & filters.group)
     async def history_command(client: Client, message: Message):
         chat_id = message.chat.id
+        from core.db import is_group_bot_active
+        if not is_group_bot_active(chat_id):
+            return
         user = message.from_user
         user_id = user.id if user else 0
         print(f"[MOVIES Engine] History command triggered by user {user_id} in chat {chat_id}")
@@ -380,6 +389,9 @@ def register(app: Client):
     @app.on_message(filters.command("request") & filters.group)
     async def request_command(client: Client, message: Message):
         chat_id = message.chat.id
+        from core.db import is_group_bot_active
+        if not is_group_bot_active(chat_id):
+            return
         user = message.from_user
         user_id = user.id if user else 0
         if len(message.command) < 2:
@@ -438,6 +450,9 @@ def register(app: Client):
     @app.on_message(filters.command(["movie", "vod"]) & filters.group)
     async def movie_command(client: Client, message: Message):
         chat_id = message.chat.id
+        from core.db import is_group_bot_active
+        if not is_group_bot_active(chat_id):
+            return
         user = message.from_user
         user_id = user.id if user else 0
 
@@ -642,6 +657,10 @@ def register(app: Client):
     @app.on_callback_query(filters.regex(r"^VOD\|"))
     async def vod_callback(client: Client, query: CallbackQuery):
         chat_id = query.message.chat.id
+        from core.db import is_group_bot_active
+        if not is_group_bot_active(chat_id):
+            await query.answer("⚠️ Bot is currently disabled in this group by Admin.", show_alert=True)
+            return
         data = query.data
         parts = data.split("|")
         print(f"[MOVIES Engine DEBUG] Received callback: data='{data}', chat_id={chat_id}")
