@@ -9,3 +9,4 @@ TgCrypto
 requests
 psutil
 throttlebuster
+pydantic
