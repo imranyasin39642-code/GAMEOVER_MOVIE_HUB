@@ -1,7 +1,6 @@
 pyrofork
 py-tgcalls
 yt-dlp
-moviebox-api
 aiohttp
 httpx
 beautifulsoup4
