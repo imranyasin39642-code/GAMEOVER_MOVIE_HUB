@@ -170,16 +170,19 @@ async def merge_video_audio(video_path: str, audio_path: str, output_path: str) 
     """
     Merge separate video and audio files using FFmpeg without re-encoding (copy streams).
     Applies +genpts to reconstruct missing presentation timestamps for perfect audio/video Lip-Sync.
+    -avoid_negative_ts make_zero: prevents any PTS offset that causes initial lip-sync jump.
+    -copyts: preserves original timestamps from both streams unchanged, no drift.
     """
     cmd = [
         "ffmpeg", "-y",
-        "-fflags", "+genpts", # Reconstruct timestamps to avoid audio-video drift
+        "-fflags", "+genpts",       # Reconstruct timestamps to avoid audio-video drift
         "-i", video_path,
         "-i", audio_path,
         "-c", "copy",
         "-map", "0:v:0",
         "-map", "1:a:0",
-        "-shortest", # Terminate output when shortest input ends
+        "-avoid_negative_ts", "make_zero",  # Prevent negative PTS = no initial sync jump
+        "-max_interleave_delta", "0",        # Accurate interleaving = tight A/V sync
         output_path
     ]
     try:

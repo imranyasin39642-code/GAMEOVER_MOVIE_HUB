@@ -577,8 +577,8 @@ class PlayerManager:
             seek_val = self.current_seek_offset.get(chat_id, 0)
             seek_str = f"-ss {seek_val} " if seek_val > 0 else ""
 
-            # Locks Video Parameters: 1080p @ 60 FPS (Full HD)
-            vid_params = VideoParameters(width=1920, height=1080, frame_rate=60)
+            # Locks Video Parameters: 720p @ 60 FPS (HD 60fps)
+            vid_params = VideoParameters(width=1280, height=720, frame_rate=60)
             
             # ── Audio Filter Chain ───────────────────────────────────────────────
             # AUDIO-ONLY: Clean Bass Boost — Smooth, No Glitch, No Pop/Distortion
@@ -603,6 +603,7 @@ class PlayerManager:
             #  aresample=48000
             #    → Hard 48kHz (Telegram required), zero sync drift
             if mode == "audio":
+                # Music mode: gentle bass boost + loudness leveling. No async resampling (causes drift)
                 audio_filter = (
                     '-af "bass=g=4:f=100:w=0.5,'
                     'acompressor=threshold=0.5:ratio=3:attack=8:release=80:makeup=1.5,'
@@ -610,24 +611,25 @@ class PlayerManager:
                     'aresample=48000"'
                 )
             else:
-                # Video mode (Movies & TV): Cinema master sound leveling
-                # Dialogue presence boost (3kHz), rumble highpass cut (40Hz), compression + volume gain, no heavy bass distortion
+                # Movie/VOD mode: Cinema dialogue boost, NO async resampling (it causes lip-sync drift!).
+                # aresample=48000 alone = simple clean resample with ZERO drift = perfect lip-sync.
                 audio_filter = (
-                    '-af "highpass=f=40,equalizer=f=150:width_type=h:width=50:g=-2,'
-                    'equalizer=f=3000:width_type=h:width=1000:g=3.5,'
-                    'acompressor=threshold=-12dB:ratio=3:attack=5:release=150:makeup=3.5dB,'
-                    'volume=2.2,alimiter=limit=0.95,'
-                    'aresample=48000:async=1:min_comp=0.001:max_soft_comp=10"'
+                    '-af "highpass=f=40,'
+                    'equalizer=f=3000:width_type=h:width=1000:g=2.5,'
+                    'acompressor=threshold=-18dB:ratio=2.5:attack=5:release=150:makeup=3dB,'
+                    'volume=1.8,alimiter=limit=0.95,'
+                    'aresample=48000"'
                 )
 
             def get_stream(video_required: bool = True):
                 v_flags = MediaStream.Flags.REQUIRED if video_required else MediaStream.Flags.IGNORE
                 if video_required:
-                    # Video mode: Expanded to 8 threads and 8192 queue buffer for high spec 16GB RAM VPS to ensure zero lag
-                    base_flags = f"--base ---start {seek_str}-re -fflags +genpts -analyzeduration 15M -probesize 15M -threads 8 -thread_queue_size 8192 -vsync cfr "
+                    # Movie/VOD mode: 4 threads, tight queue, +genpts for PTS reconstruction = zero lip-sync drift
+                    # -vsync passthrough: do NOT alter frame timestamps (cfr causes sync drift on VBR sources)
+                    base_flags = f"--base ---start {seek_str}-fflags +genpts -analyzeduration 8M -probesize 8M -threads 4 -thread_queue_size 2048 -vsync passthrough "
                 else:
-                    # Audio-only: minimal FFmpeg flags — 1 thread, tiny probe, no vsync = lowest CPU + latency
-                    base_flags = f"--base ---start {seek_str}-analyzeduration 2M -probesize 2M -threads 1 -thread_queue_size 256 "
+                    # Audio-only: minimal FFmpeg flags — 2 threads, tiny probe = low CPU
+                    base_flags = f"--base ---start {seek_str}-analyzeduration 2M -probesize 2M -threads 2 -thread_queue_size 512 "
                 return SeekableMediaStream(
                     media_path=local_file,
                     audio_path=None,  # Single local unified container file

@@ -28,11 +28,32 @@ def register(app: Client):
         target_members = []
         for m in new_members:
             if m.id == me.id:
+                # Alert Owner via PM
+                owner_id = Config.OWNER_ID or 6805412676
+                added_by = message.from_user
+                added_by_name = added_by.first_name if added_by and added_by.first_name else "Unknown User"
+                added_by_id = added_by.id if added_by else 0
+                added_by_username = f"@{added_by.username}" if added_by and added_by.username else "N/A"
+                
+                alert_text = (
+                    f"{ROYAL_HEADER}"
+                    f"🎉 <b>BOT ADDED TO NEW GROUP!</b>\n\n"
+                    f"🏠 <b>Group Name:</b> <code>{message.chat.title}</code>\n"
+                    f"🆔 <b>Group ID:</b> <code>{chat_id}</code>\n\n"
+                    f"👤 <b>Added By:</b> <a href=\"tg://user?id={added_by_id}\">{added_by_name}</a> [{added_by_username}]\n"
+                    f"🆔 <b>User ID:</b> <code>{added_by_id}</code>"
+                )
+                try:
+                    from bot import send_styled
+                    await send_styled(chat_id=owner_id, text=alert_text)
+                except Exception as e:
+                    print(f"[Group Add Alert] Error: {e}")
+
                 # Bot itself joined a group — send intro message
                 intro_text = (
                     f"{ROYAL_HEADER}"
                     "🎬 <b>GameOver Movie Hub yahan aa gaya hai!</b>\n\n"
-                    "Main group mein <b>Movies aur Web Series</b> ka stream link provide kar sakta hoon.\n\n"
+                    "Main group mein <b>Movies aur Web Series</b> stream kar sakta hoon.\n\n"
                     "🍿 <b>Movie ya Series dhoondne ke liye:</b>\n"
                     "👉 <code>/movie [movie name]</code>\n\n"
                     "📺 <b>Example:</b>\n"
