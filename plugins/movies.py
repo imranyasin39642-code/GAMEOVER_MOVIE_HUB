@@ -478,51 +478,8 @@ def register(app: Client):
         status_msg = await show_loading_animation(chat_id, "Searching")
 
         try:
-            # Auto-Append Hindi behind the scenes
-            search_query = f"{query} Hindi"
-            print(f"[MOVIES Engine] Fetching Hindi results for: '{search_query}'")
-            hindi_items = await search_vod(query, language="hi")
-
-            # Check if the top result clearly has 'Hindi' in the title (Title check is the only reliable way)
-            has_hindi = False
-            if hindi_items:
-                top_item = hindi_items[0]
-                title_lower = top_item.title.lower()
-                if "hindi" in title_lower:
-                    has_hindi = True
-
-            session = Session()
-
-            if has_hindi:
-                print(f"[MOVIES Engine] Smart Check: Top result clearly has Hindi. Auto-playing...")
-                # Initialize session tracker
-                vod_sessions[chat_id] = {
-                    "query": query,
-                    "requester_id": user_id,
-                    "requester_name": user.first_name if user and user.first_name else (f"@{user.username}" if user and user.username else str(user_id)),
-                    "search_results": hindi_items,
-                    "session": session,
-                    "seasons": [],
-                    "chosen_season": 1,
-                    "chosen_episode": 1,
-                    "current_item": hindi_items[0],
-                    "chosen_lang": "hi",
-                    "title": hindi_items[0].title.replace("[Hindi]", "").replace("[English]", "").replace("[english]","").replace("[Hindi]","").strip()
-                }
-                session_data = vod_sessions[chat_id]
-                current_item = hindi_items[0]
-                is_series = current_item.subjectType == SubjectType.TV_SERIES or int(getattr(current_item, "subjectType", 1)) == 2
-
-                if is_series:
-                    await select_vod_item(chat_id, current_item, status_msg, user_id)
-                else:
-                    await trigger_movie_playback(status_msg, session_data, season=0, episode=0)
-                return
-
-            # Fallback Option: Hindi not found. Search for English/Original version
-            print(f"[MOVIES Engine] Hindi version not found. Fetching English/Original results...")
-            english_items = await search_vod(query, language="en")
-            if not english_items:
+            items = await search_vod(query, language="hi")
+            if not items:
                 await safe_edit(
                     status_msg,
                     f"{ROYAL_HEADER}"
@@ -531,34 +488,50 @@ def register(app: Client):
                 )
                 return
 
-            # Store English/Original version in session tracker
+            session = Session()
+            top_item = items[0]
+            clean_title = top_item.title.replace("[Hindi]", "").replace("[English]", "").replace("[english]","").replace("[Hindi]","").strip()
+
             vod_sessions[chat_id] = {
                 "query": query,
                 "requester_id": user_id,
                 "requester_name": user.first_name if user and user.first_name else (f"@{user.username}" if user and user.username else str(user_id)),
-                "search_results": english_items,
+                "search_results": items,
                 "session": session,
                 "seasons": [],
                 "chosen_season": 1,
                 "chosen_episode": 1,
-                "current_item": english_items[0],
-                "chosen_lang": "en",
-                "title": english_items[0].title.replace("[Hindi]", "").replace("[English]", "").replace("[english]","").replace("[Hindi]","").strip()
+                "current_item": top_item,
+                "chosen_lang": "hi" if "hindi" in top_item.title.lower() else "en",
+                "title": clean_title
             }
+            session_data = vod_sessions[chat_id]
 
-            # Prompt the user that Hindi is not available, offer playing English/Original version
+            # If top item is clearly the target or only 1 item returned, auto-proceed
+            if len(items) == 1 or query.lower() in top_item.title.lower():
+                is_series = top_item.subjectType == SubjectType.TV_SERIES or int(getattr(top_item, "subjectType", 1)) == 2
+                if is_series:
+                    await select_vod_item(chat_id, top_item, status_msg, user_id)
+                else:
+                    await trigger_movie_playback(status_msg, session_data, season=0, episode=0)
+                return
+
+            # Multiple search results — render interactive selection panel
             caption = (
                 f"{ROYAL_HEADER}"
-                f"⚠️ <b>Ye movie/series Hindi audio mein available nahi hai!</b>\n\n"
-                f"Kya aap ise 🇺🇸 <b>English / Original</b> audio mein play karna chahte hain?"
+                f"🔍 <b>sᴇᴀʀᴄʜ ʀᴇsᴜʟᴛs for:</b> <code>{query}</code>\n\n"
+                f"Neeche se apni preferred movie ya series select karein:"
             )
-            keyboard = InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton("🇺🇸 PLAY IN ENGLISH/ORIGINAL", callback_data=f"VODLANG_PLAY|{user_id}", style="success"),
-                    InlineKeyboardButton("❌ CANCEL", callback_data=f"vcplay_close", style="danger")
-                ]
-            ])
-            await safe_edit(status_msg, caption, keyboard)
+            buttons = []
+            for itm in items[:6]:
+                is_ser = itm.subjectType == SubjectType.TV_SERIES or int(getattr(itm, "subjectType", 1)) == 2
+                icon = "📺" if is_ser else "🎬"
+                short_t = (itm.title[:35] + "...") if len(itm.title) > 35 else itm.title
+                buttons.append([
+                    InlineKeyboardButton(f"{icon} {short_t}", callback_data=f"VOD|select|{user_id}|{itm.subjectId}", style="primary")
+                ])
+            buttons.append([InlineKeyboardButton("❌ CLOSE", callback_data="vcplay_close", style="danger")])
+            await safe_edit(status_msg, caption, InlineKeyboardMarkup(buttons))
 
         except Exception as e:
             print(f"[MOVIES Engine] Error in /movie command: {e}")

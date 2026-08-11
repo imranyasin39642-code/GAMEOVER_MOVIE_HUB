@@ -159,9 +159,14 @@ class FixedStreamFilesDetail(StreamFilesDetail):
         return await self.get_modelled_content(season, episode)
 
 
+import difflib
+
+
 async def search_vod(query: str, language: str = "en"):
     """
-    Search MovieBox for a query and return list of SearchResultsItem objects.
+    Search MovieBox for a query and return ranked list of SearchResultsItem objects.
+    Uses fuzzy matching and score ranking so titles like 'The Witcher' or 'witcer'
+    always resolve cleanly without false negatives.
     """
     session = Session()
     
@@ -171,59 +176,78 @@ async def search_vod(query: str, language: str = "en"):
     clean_query = re.sub(r'\s+Ep?\s*\d+\b', '', clean_query, flags=re.IGNORECASE)
     clean_query = clean_query.strip()
     
-    items = []
-    if language == "hi":
-        try:
-            search_client = Search(session=session, query=f"{clean_query} Hindi")
-            results = await search_client.get_content_model()
-            if results and results.items:
-                items = results.items
-        except Exception as err:
-            print(f"[VOD Scraper] Hindi search attempt failed: {err}")
-            
-    if not items:
-        try:
-            search_client = Search(session=session, query=clean_query)
-            results = await search_client.get_content_model()
-            if results and results.items:
-                items = results.items
-        except Exception as err:
-            print(f"[VOD Scraper] Base search attempt failed: {err}")
+    seen_ids = set()
+    raw_items = []
 
-    if not items:
+    # 1. Search clean base query first (MovieBox index is title-first)
+    try:
+        search_client = Search(session=session, query=clean_query)
+        results = await search_client.get_content_model()
+        if results and results.items:
+            for item in results.items:
+                if item.subjectId not in seen_ids:
+                    seen_ids.add(item.subjectId)
+                    raw_items.append(item)
+    except Exception as err:
+        print(f"[VOD Scraper] Base search attempt failed: {err}")
+
+    # 2. Search query + " Hindi" for Hindi-specific releases
+    try:
+        search_client = Search(session=session, query=f"{clean_query} Hindi")
+        results = await search_client.get_content_model()
+        if results and results.items:
+            for item in results.items:
+                if item.subjectId not in seen_ids:
+                    seen_ids.add(item.subjectId)
+                    raw_items.append(item)
+    except Exception as err:
+        print(f"[VOD Scraper] Hindi search attempt failed: {err}")
+
+    # 3. If still no items, try toggling "The " prefix for fuzzy match
+    if not raw_items:
+        alt_query = clean_query[4:] if clean_query.lower().startswith("the ") else f"The {clean_query}"
+        try:
+            search_client = Search(session=session, query=alt_query)
+            results = await search_client.get_content_model()
+            if results and results.items:
+                for item in results.items:
+                    if item.subjectId not in seen_ids:
+                        seen_ids.add(item.subjectId)
+                        raw_items.append(item)
+        except Exception as err:
+            print(f"[VOD Scraper] Alt search attempt failed: {err}")
+
+    if not raw_items:
         return []
+
+    # 4. Fuzzy score ranking algorithm
+    query_lower = clean_query.lower()
+    query_words = [w for w in query_lower.split() if len(w) > 1]
+
+    def rank_score(item: SearchResultsItem) -> float:
+        title_lower = item.title.lower()
+        clean_title = re.sub(r'\[.*?\]', '', title_lower).replace("dubbed", "").strip()
         
-    # Apply smart relevance sorting
-    selected_media = None
-    orig_words = [w for w in clean_query.lower().split() if w]
-    
-    if language == "hi":
-        for item in items:
-            title_lower = item.title.lower()
-            if "hindi" in title_lower:
-                target_clean = title_lower.replace("[hindi]", "").replace("[english]", "").replace("dubbed", "")
-                if all(word in target_clean for word in orig_words):
-                    selected_media = item
-                    break
-        if not selected_media:
-            for item in items:
-                if "hindi" in item.title.lower():
-                    selected_media = item
-                    break
-    else:
-        for item in items:
-            title_lower = item.title.lower()
-            target_clean = title_lower.replace("[hindi]", "").replace("[english]", "")
-            if all(word in target_clean for word in orig_words):
-                selected_media = item
-                break
-                    
-    if selected_media:
-        if selected_media in items:
-            items.remove(selected_media)
-        items.insert(0, selected_media)
+        # Base ratio using difflib
+        score = difflib.SequenceMatcher(None, query_lower, clean_title).ratio()
         
-    return items
+        # Word overlap boost
+        matched_words = sum(1 for w in query_words if w in clean_title)
+        if query_words:
+            score += (matched_words / len(query_words)) * 0.4
+
+        # Exact substring match boost
+        if query_lower in clean_title:
+            score += 0.3
+
+        # Hindi preference boost if requested
+        if language == "hi" and "hindi" in title_lower:
+            score += 0.25
+
+        return score
+
+    raw_items.sort(key=rank_score, reverse=True)
+    return raw_items
 
 
 async def search_hindi_version(session: Session, original_title: str):
