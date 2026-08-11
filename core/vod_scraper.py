@@ -165,31 +165,35 @@ async def search_vod(query: str, language: str = "en"):
     """
     session = Session()
     
-    # Clean query for search endpoint
+    # Clean query for search endpoint (strip season/ep markers)
     clean_query = re.sub(r'\s+S\d+\b', '', query, flags=re.IGNORECASE)
     clean_query = re.sub(r'\s+Season\s+\d+\b', '', clean_query, flags=re.IGNORECASE)
+    clean_query = re.sub(r'\s+Ep?\s*\d+\b', '', clean_query, flags=re.IGNORECASE)
     clean_query = clean_query.strip()
     
-    # Append language tag to search query if needed
+    items = []
     if language == "hi":
-        search_query = f"{clean_query} Hindi"
-    else:
-        search_query = clean_query
-        
-    search_client = Search(session=session, query=search_query)
-    results = await search_client.get_content_model()
-    items = results.items if (results and results.items) else []
-    
+        try:
+            search_client = Search(session=session, query=f"{clean_query} Hindi")
+            results = await search_client.get_content_model()
+            if results and results.items:
+                items = results.items
+        except Exception as err:
+            print(f"[VOD Scraper] Hindi search attempt failed: {err}")
+            
     if not items:
-        # Fallback to searching without language tag if no results
-        search_client = Search(session=session, query=clean_query)
-        results = await search_client.get_content_model()
-        items = results.items if (results and results.items) else []
-        
+        try:
+            search_client = Search(session=session, query=clean_query)
+            results = await search_client.get_content_model()
+            if results and results.items:
+                items = results.items
+        except Exception as err:
+            print(f"[VOD Scraper] Base search attempt failed: {err}")
+
     if not items:
         return []
         
-    # Apply smart filtering
+    # Apply smart relevance sorting
     selected_media = None
     orig_words = [w for w in clean_query.lower().split() if w]
     
@@ -197,21 +201,26 @@ async def search_vod(query: str, language: str = "en"):
         for item in items:
             title_lower = item.title.lower()
             if "hindi" in title_lower:
-                target_clean = title_lower.replace("[hindi]", "").replace("[english]", "")
+                target_clean = title_lower.replace("[hindi]", "").replace("[english]", "").replace("dubbed", "")
                 if all(word in target_clean for word in orig_words):
+                    selected_media = item
+                    break
+        if not selected_media:
+            for item in items:
+                if "hindi" in item.title.lower():
                     selected_media = item
                     break
     else:
         for item in items:
             title_lower = item.title.lower()
-            if "english" in title_lower:
-                target_clean = title_lower.replace("[hindi]", "").replace("[english]", "")
-                if all(word in target_clean for word in orig_words):
-                    selected_media = item
-                    break
+            target_clean = title_lower.replace("[hindi]", "").replace("[english]", "")
+            if all(word in target_clean for word in orig_words):
+                selected_media = item
+                break
                     
     if selected_media:
-        items.remove(selected_media)
+        if selected_media in items:
+            items.remove(selected_media)
         items.insert(0, selected_media)
         
     return items
@@ -282,10 +291,22 @@ async def fetch_tv_details(session: Session, item: SearchResultsItem):
     return details
 
 
-async def resolve_stream_link(session: Session, item: SearchResultsItem, season: int = 0, episode: int = 0, quality: str = "720"):
+async def resolve_stream_link(session: Session, item: SearchResultsItem, season: int = 0, episode: int = 0, quality: str = None):
     """
-    Resolve the direct streaming URL for a movie or specific TV episode.
+    Resolve the direct streaming URL for a movie or specific TV episode based on admin quality preferences.
     """
+    from core.db import get_setting
+    if not quality:
+        q_setting = get_setting("quality_pref") or "1080p"
+        res_map = {
+            "4K": "2160",
+            "2K": "1440",
+            "1080p": "1080",
+            "720p": "720",
+            "480p": "480"
+        }
+        quality = res_map.get(q_setting, "1080")
+
     cache_key = f"{item.subjectId}|{season}|{episode}|{quality}"
     from core.db import get_cached_vod, set_cached_vod
     
@@ -314,14 +335,14 @@ async def resolve_stream_link(session: Session, item: SearchResultsItem, season:
                     stream_info.streams,
                     key=lambda s: int(s.resolutions) if str(s.resolutions).isdigit() else 0
                 )
-                req_val = int(quality) if quality.isdigit() else 720
+                req_val = int(quality) if quality.isdigit() else 1080
                 for s in reversed(streams_sorted):
                     val = int(s.resolutions) if str(s.resolutions).isdigit() else 0
                     if val <= req_val:
                         matched = s
                         break
                 if not matched and streams_sorted:
-                    matched = streams_sorted[0]
+                    matched = streams_sorted[-1]  # Pick highest available
             except Exception:
                 matched = stream_info.best_stream_file
                 

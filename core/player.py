@@ -134,7 +134,7 @@ def get_configured_video_parameters():
         "4K": (3840, 2160, 2160),
         "2K": (2560, 1440, 1440),
         "1080p": (1920, 1080, 1080),
-   s     "720p": (1280, 720, 720),
+        "720p": (1280, 720, 720),
         "480p": (854, 480, 480),
     }
 
@@ -503,29 +503,6 @@ class PlayerManager:
 
             # Detect stream modes
             mode = "audio" if getattr(song, "quality", "") == "audio" else "video"
-            is_vod = (song.uploader in ("GameOver Stream", "MovieBox Stream", " Movies Stream", "MOVIES Engine")) or (song.duration == "VOD")
-            
-            # Auto-refresh YouTube direct links before downloading
-            if not is_vod and not is_seek:
-                from core.youtube import extract_video_id, refresh_youtube_stream
-                video_id = extract_video_id(song.webpage_url)
-                if video_id:
-                    # Check if file is already cached locally
-                    local_filename = f"{video_id}_{mode}.mp4"
-                    local_path = os.path.join("downloads", local_filename)
-                    if os.path.exists(local_path) and os.path.getsize(local_path) > 100000:
-                        print(f"[Player] Found cached local file for ID {video_id}. Bypassing link refresh.")
-                    else:
-                        print(f"[Player] Refreshing expired stream URL for YouTube ID: {video_id}...")
-                        fresh_data = await refresh_youtube_stream(
-                            video_id, 
-                            mode=mode, 
-                            quality=getattr(song, "quality", "480")
-                        )
-                        if fresh_data:
-                            song.video_url = fresh_data["video_url"]
-                            song.audio_url = fresh_data["audio_url"]
-                            print(f"[Player] Stream URL refreshed successfully!")
 
             # Retrieve or Download local cached file
             local_file = None
@@ -760,13 +737,7 @@ class PlayerManager:
             if send_card and self.app and not is_seek:
                 try:
                     from plugins.controls import get_rich_control_buttons, get_rich_caption
-                    # Conditionally choose cover image: YouTube uses high-speed lofi cover to bypass Pak ISP ytimg block, MovieBox uses song.thumbnail
-                    is_vod = (song.uploader in ("GameOver Stream", "MovieBox Stream", " Movies Stream", "MOVIES Engine")) or (song.duration == "VOD")
-                    is_youtube = not is_vod and song.thumbnail and "ytimg" in song.thumbnail
-                    if is_youtube:
-                        photo_url = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600"
-                    else:
-                        photo_url = song.thumbnail if (song.thumbnail and song.thumbnail.startswith("http")) else "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600"
+                    photo_url = song.thumbnail if (song.thumbnail and song.thumbnail.startswith("http")) else "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600"
                     
                     caption = get_rich_caption(song, played_secs=0)
                     buttons = get_rich_control_buttons(chat_id, is_paused=False)

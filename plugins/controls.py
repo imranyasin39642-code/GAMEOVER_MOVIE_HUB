@@ -24,7 +24,7 @@ MUTE_E   = '<tg-emoji emoji-id="5330519486279740988">🌟</tg-emoji>'
 LOOP_E   = '<tg-emoji emoji-id="5330418447174099706">🌟</tg-emoji>'
 CHECK_E  = '<tg-emoji emoji-id="5332572076920298887">🌟</tg-emoji>'
 
-ROYAL_HEADER = "👑 <b>ɢᴀᴍᴇᴏᴠᴇʀ ᴍᴜsɪᴄ ʙᴏᴛ</b> 👑\n\n"
+ROYAL_HEADER = "👑 <b>ɢᴀᴍᴇᴏᴠᴇʀ ᴍᴏᴠɪᴇ ʜᴜʙ</b> 👑\n\n"
 
 
 def control_buttons(state: str = "play") -> InlineKeyboardMarkup:
@@ -426,22 +426,16 @@ def register(app: Client):
                 await callback_query.answer("Opening About menu...")
                 about_text = (
                     f"{ROYAL_HEADER}"
-                    f"ɪ ᴀᴍ <b>{bot_name}</b>, ᴀ ᴘʀᴇᴍɪᴜᴍ ʜɪɢʜ-ᴘᴇʀғᴏʀᴍᴀɴᴄᴇ ᴍᴜsɪᴄ, ᴍᴏᴠɪᴇ & ᴠɪᴅᴇᴏ/ᴘʜᴏᴛᴏ ᴇᴅɪᴛɪɴɢ ʙᴏᴛ.\n\n"
+                    f"ɪ ᴀᴍ <b>{bot_name}</b>, ᴀ ᴘʀᴇᴍɪᴜᴍ ʜɪɢʜ-ᴘᴇʀғᴏʀᴍᴀɴᴄᴇ ᴍᴏᴠɪᴇ & ᴛᴠ sᴇʀɪᴇs sᴛʀᴇᴀᴍɪɴɢ ʙᴏᴛ.\n\n"
                     f"💎 <b><u><b>ᴄᴏʀᴇ ғᴇᴀᴛᴜʀᴇs & ᴄᴏᴍᴍᴀɴᴅs:</b></u></b>\n\n"
-                    f"🎵 <b>ᴍᴜsɪᴄ & sᴛʀᴇᴀᴍɪɴɢ:</b>\n"
-                    f"• <code>/plays [song]</code> — Stream audio/video from YT, Spotify, SoundCloud.\n"
-                    f"• <code>/vplays [song]</code> — Play video inside Video Chat.\n"
-                    f"• <code>/audio [song]</code> — Stream audio-only with high-bass boost.\n"
-                    f"• <code>/playlist [url]</code> — Play YouTube Playlists.\n"
-                    f"• <code>/movie [name]</code> — Search & stream movies & TV shows.\n\n"
-                    f"🎬 <b>ɢᴀᴍᴇᴏᴠᴇʀ sᴛᴜᴅɪᴏ (ʜᴇᴀᴠʏ ᴇᴅɪᴛɪɴɢ):</b>\n"
-                    f"• <code>/edit</code> — Reply to video/photo to upscale 4K 120FPS with curves & curves color grade.\n"
-                    f"• <code>/mystudio</code> — Check your remaining daily quota.\n\n"
-                    f"📥 <b>sᴏᴄɪᴀʟ ᴅᴏᴡɴʟᴏᴀᴅᴇʀ:</b>\n"
-                    f"• <code>/dd [url]</code> — Fast download YouTube videos.\n"
-                    f"• <code>/dw [url]</code> — Download from IG, TikTok, FB, X, Reddit.\n\n"
+                    f"🎬 <b>ᴍᴏᴠɪᴇs & sᴇʀɪᴇs sᴛʀᴇᴀᴍɪɴɢ:</b>\n"
+                    f"• <code>/movie [name]</code> — Search & stream movies & TV shows in 4K/1080p.\n"
+                    f"• <code>/trending</code> — View top trending blockbusters & series.\n"
+                    f"• <code>/random</code> — Get a random Hindi dubbed blockbuster.\n"
+                    f"• <code>/history</code> — Check group watch progress & resume history.\n"
+                    f"• <code>/request [title]</code> — Request a movie or TV show from Admin.\n\n"
                     f"⚙️ <b>ᴘʟᴀʏʙᴀᴄᴋ ᴄᴏɴᴛʀᴏʟs:</b>\n"
-                    f"• <code>/skip</code> | <code>/voteskip</code> — Skip tracks.\n"
+                    f"• <code>/skip</code> | <code>/voteskip</code> — Skip current movie/episode.\n"
                     f"• <code>/stop</code> — Clear queue and leave VC.\n"
                     f"• <code>/pause</code> | <code>/resume</code> — Pause or resume stream.\n"
                     f"• <code>/current</code> — Show rich playback card.\n"
@@ -459,18 +453,15 @@ def register(app: Client):
                 "help_user": {
                     "Title": "👥 ᴜsᴇʀ ᴄᴏᴍᴍᴀɴᴅs",
                     "Content": (
-                        "<b>🎬 <u>ᴘʟᴀʏʙᴀᴄᴋ:</u></b>\n"
-                        "• <code>/plays [song]</code> — ᴍᴜsɪᴄ / ᴠɪᴅᴇᴏ sᴛʀᴇᴀᴍ\n"
-                        "• <code>/audio [song]</code> — ʜɪɢʜ ʙᴀss ᴀᴜᴅɪᴏ\n"
+                        "<b>🎬 <u>ᴍᴏᴠɪᴇ sᴛʀᴇᴀᴍɪɴɢ:</u></b>\n"
                         "• <code>/movie [name]</code> — ғɪʟᴍs & sᴇʀɪᴇs sᴛʀᴇᴀᴍ\n"
-                        "• <code>/playlist [url]</code> — YT ᴘʟᴀʏʟɪsᴛ\n\n"
-                        "<b>📥 <u>ᴅᴏᴡɴʟᴏᴀᴅ:</u></b>\n"
-                        "• <code>/dd [url]</code> — YT ᴠɪᴅᴇᴏ ᴅᴏᴡɴʟᴏᴀᴅ\n"
-                        "• <code>/dw [url]</code> — ᴀɴʏ ᴘʟᴀᴛғᴏʀᴍ ᴅᴏᴡɴʟᴏᴀᴅ\n\n"
+                        "• <code>/trending</code> — ᴛᴏᴘ ᴛʀᴇɴᴅɪɴɢ ᴍᴏᴠɪᴇs\n"
+                        "• <code>/random</code> — ʀᴀɴᴅᴏᴍ ʜɪɴᴅɪ ʙʟᴏᴄᴋʙᴜsᴛᴇʀ\n"
+                        "• <code>/history</code> — ᴡᴀᴛᴄʜ ᴘʀᴏɢʀᴇss & ʜɪsᴛᴏʀʏ\n"
+                        "• <code>/request [title]</code> — ʀᴇǫᴜᴇsᴛ ᴍᴏᴠɪᴇ ғʀᴏᴍ ᴀᴅᴍɪɴ\n\n"
                         "<b>📊 <u>ɪɴғᴏ:</u></b>\n"
                         "• <code>/current</code> — ɴᴏᴡ ᴘʟᴀʏɪɴɢ ᴄᴀʀᴅ\n"
-                        "• <code>/queue</code> — ᴜᴘᴄᴏᴍɪɴɢ sᴏɴɢs ʟɪsᴛ\n"
-                        "• <code>/mystudio</code> — sᴛᴜᴅɪᴏ ǫᴜᴏᴛᴀ sᴛᴀᴛᴜs"
+                        "• <code>/queue</code> — ᴜᴘᴄᴏᴍɪɴɢ ǫᴜᴇᴜᴇ ʟɪsᴛ"
                     ),
                     "ExtraMarkup": True   # flag to add group invite button
                 },
@@ -490,22 +481,20 @@ def register(app: Client):
                     "Content": (
                         "<b>👑 <u>ᴍᴀɴᴀɢᴇᴍᴇɴᴛ:</u></b>\n"
                         "• <code>/admin</code> — ᴀᴅᴍɪɴ ᴘᴀɴᴇʟ (ᴅᴍ ᴏɴʟʏ)\n"
-                        "• <code>/nst</code> — ɴᴇᴛᴡᴏʀᴋ sᴘᴇᴇᴅ ᴛᴇsᴛ\n"
-                        "• <code>/edit_limit</code> — ᴀᴅᴊᴜsᴛ sᴛᴜᴅɪᴏ ǫᴜᴏᴛᴀ\n"
-                        "• <code>/studio_stats</code> — sᴛᴜᴅɪᴏ ᴜsᴀɢᴇ sᴛᴀᴛs"
+                        "• <code>/by</code> — ғᴏʀᴄᴇ-ᴄʟᴇᴀʀ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ (ᴏᴡɴᴇʀ)"
                     )
                 },
                 "help_devs": {
                     "Title": "ℹ️ ᴀʙᴏᴜᴛ ᴛʜɪs ʙᴏᴛ",
                     "Content": (
-                        "<b>🎮 ɢᴀᴍᴇᴏᴠᴇʀ ᴍᴜsɪᴄ ʙᴏᴛ</b>\n\n"
-                        "ᴀ ᴘʀᴇᴍɪᴜᴍ ʜɪɢʜ-ᴘᴇʀғᴏʀᴍᴀɴᴄᴇ ᴍᴜsɪᴄ, ᴍᴏᴠɪᴇ & sᴛᴜᴅɪᴏ ʀᴇɴᴅᴇʀɪɴɢ ʙᴏᴛ.\n\n"
+                        "<b>🎮 ɢᴀᴍᴇᴏᴠᴇʀ ᴍᴏᴠɪᴇ ʜᴜʙ</b>\n\n"
+                        "ᴀ ᴘʀᴇᴍɪᴜᴍ ʜɪɢʜ-ᴘᴇʀғᴏʀᴍᴀɴᴄᴇ ᴍᴏᴠɪᴇ & ᴛᴠ sᴇʀɪᴇs sᴛʀᴇᴀᴍɪɴɢ ʙᴏᴛ.\n\n"
                         "<b>⚡ ғᴇᴀᴛᴜʀᴇs:</b>\n"
-                        "• YT, Spotify, SoundCloud, TikTok, IG, FB\n"
-                        "• 4K 120FPS Studio Renderer (/edit)\n"
+                        "• Pure MovieBox VOD Engine\n"
+                        "• 4K / 2K / 1080p Full HD Video\n"
+                        "• 120 FPS / 90 FPS / 60 FPS Framerate Modes\n"
                         "• Movies & TV Series streaming\n"
-                        "• Social media downloader\n"
-                        "• Real-time VPS network stats"
+                        "• Instant progress save & resume"
                     )
                 }
             }

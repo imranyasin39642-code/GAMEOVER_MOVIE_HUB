@@ -36,7 +36,7 @@ from core.trending_manager import get_trending_list
 vod_sessions: dict[int, dict] = {}
 
 # ── Royal Header Constant ─────────────────────────────────────────────────────
-ROYAL_HEADER = "👑 <b>ɢᴀᴍᴇᴏᴠᴇʀ ᴍᴜsɪᴄ ʙᴏᴛ</b> 👑\n\n"
+ROYAL_HEADER = "👑 <b>ɢᴀᴍᴇᴏᴠᴇʀ ᴍᴏᴠɪᴇ ʜᴜʙ</b> 👑\n\n"
 
 
 async def safe_edit(message, text, reply_markup=None):
