@@ -117,6 +117,32 @@ TRASH  = '<tg-emoji emoji-id="6158751479172702139">🗑</tg-emoji>'
 WARN   = '<tg-emoji emoji-id="6160934967531543039">⚠️</tg-emoji>'
 
 
+def get_configured_video_parameters():
+    """Reads configured target resolution and FPS from database for GAMEOVER MOVIE HUB."""
+    from core.db import get_setting
+    q = get_setting("quality_pref") or "1080p"
+    fps_str = get_setting("fps_pref") or "90"
+    try:
+        fps_val = int(fps_str)
+    except Exception:
+        fps_val = 90
+
+    # Support 120, 90, 60, 30 FPS
+    fps_val = min(120, max(15, fps_val))
+
+    resolution_map = {
+        "4K": (3840, 2160, 2160),
+        "2K": (2560, 1440, 1440),
+        "1080p": (1920, 1080, 1080),
+   s     "720p": (1280, 720, 720),
+        "480p": (854, 480, 480),
+    }
+
+    w, h, max_h = resolution_map.get(q, (1920, 1080, 1080))
+    vid_params = VideoParameters(width=w, height=h, frame_rate=fps_val)
+    return vid_params, q, fps_val, max_h
+
+
 class SeekableMediaStream(MediaStream):
     async def check_stream(self):
         import pytgcalls.types.stream.media_stream as ms_mod

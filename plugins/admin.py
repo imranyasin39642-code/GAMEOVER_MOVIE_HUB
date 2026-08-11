@@ -52,9 +52,50 @@ def get_admin_panel_markup() -> InlineKeyboardMarkup:
             InlineKeyboardButton("🤖 BOT STATUS", callback_data="admin_status_groups|0", style="primary")
         ],
         [
+            InlineKeyboardButton("⚡ VIDEO QUALITY & FPS", callback_data="admin_quality_panel", style="primary"),
             InlineKeyboardButton("📹 MANAGE VIDEOS", callback_data="admin_manage_videos", style="primary")
         ],
         [
+            InlineKeyboardButton("❌ CLOSE", callback_data="admin_close", style="danger")
+        ]
+    ])
+
+
+def get_quality_panel_markup() -> InlineKeyboardMarkup:
+    from core.player import get_configured_video_parameters
+    _, active_q, active_fps, _ = get_configured_video_parameters()
+
+    q_4k_icon = "🟢 " if active_q == "4K" else ""
+    q_2k_icon = "🟢 " if active_q == "2K" else ""
+    q_1080_icon = "🟢 " if active_q == "1080p" else ""
+    q_720_icon = "🟢 " if active_q == "720p" else ""
+    q_480_icon = "🟢 " if active_q == "480p" else ""
+
+    fps_120_icon = "⚡ " if active_fps == 120 else ""
+    fps_90_icon = "⚡ " if active_fps == 90 else ""
+    fps_60_icon = "🟢 " if active_fps == 60 else ""
+    fps_30_icon = "🟢 " if active_fps == 30 else ""
+
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(f"{q_4k_icon}4K (2160p)", callback_data="admin_set_q_4K", style="success" if active_q == "4K" else "primary"),
+            InlineKeyboardButton(f"{q_2k_icon}2K (1440p)", callback_data="admin_set_q_2K", style="success" if active_q == "2K" else "primary"),
+        ],
+        [
+            InlineKeyboardButton(f"{q_1080_icon}1080p Full HD", callback_data="admin_set_q_1080p", style="success" if active_q == "1080p" else "primary"),
+            InlineKeyboardButton(f"{q_720_icon}720p HD", callback_data="admin_set_q_720p", style="success" if active_q == "720p" else "primary"),
+            InlineKeyboardButton(f"{q_480_icon}480p SD", callback_data="admin_set_q_480p", style="success" if active_q == "480p" else "primary"),
+        ],
+        [
+            InlineKeyboardButton(f"{fps_120_icon}120 FPS Mode", callback_data="admin_set_fps_120", style="success" if active_fps == 120 else "primary"),
+            InlineKeyboardButton(f"{fps_90_icon}90 FPS Mode", callback_data="admin_set_fps_90", style="success" if active_fps == 90 else "primary"),
+        ],
+        [
+            InlineKeyboardButton(f"{fps_60_icon}60 FPS Mode", callback_data="admin_set_fps_60", style="success" if active_fps == 60 else "primary"),
+            InlineKeyboardButton(f"{fps_30_icon}30 FPS Mode", callback_data="admin_set_fps_30", style="success" if active_fps == 30 else "primary"),
+        ],
+        [
+            InlineKeyboardButton("🔙 BACK TO DASHBOARD", callback_data="admin_back", style="primary"),
             InlineKeyboardButton("❌ CLOSE", callback_data="admin_close", style="danger")
         ]
     ])
@@ -463,6 +504,69 @@ def register(app: Client):
                     f"🟢 = Bot active | 🔴 = Bot disabled"
                 ),
                 markup=get_status_groups_markup(groups, page),
+                message_id=query.message.id
+            )
+
+        elif data == "admin_quality_panel":
+            await query.answer("Quality & FPS Manager")
+            from core.player import get_configured_video_parameters
+            _, active_q, active_fps, _ = get_configured_video_parameters()
+            await send_styled(
+                client=client,
+                chat_id=chat_id,
+                text=(
+                    f"{ROYAL_HEADER}"
+                    f"⚡ <b>VIDEO QUALITY & FPS MANAGER ⚡</b>\n\n"
+                    f"Current Active Stream Target:\n"
+                    f"• <b>Target Quality:</b> <code>{active_q}</code>\n"
+                    f"• <b>Framerate Mode:</b> <code>{active_fps} FPS</code>\n\n"
+                    f"<i>Select your preferred resolution or framerate below. All Telegram video streams will extract using these quality settings!</i>"
+                ),
+                markup=get_quality_panel_markup(),
+                message_id=query.message.id
+            )
+
+        elif data.startswith("admin_set_q_"):
+            new_q = data.replace("admin_set_q_", "")
+            from core.db import set_setting
+            set_setting("quality_pref", new_q)
+            await query.answer(f"Quality updated to {new_q}!", show_alert=True)
+            from core.player import get_configured_video_parameters
+            _, active_q, active_fps, _ = get_configured_video_parameters()
+            await send_styled(
+                client=client,
+                chat_id=chat_id,
+                text=(
+                    f"{ROYAL_HEADER}"
+                    f"⚡ <b>VIDEO QUALITY & FPS MANAGER ⚡</b>\n\n"
+                    f"Current Active Stream Target:\n"
+                    f"• <b>Target Quality:</b> <code>{active_q}</code>\n"
+                    f"• <b>Framerate Mode:</b> <code>{active_fps} FPS</code>\n\n"
+                    f"<i>Select your preferred resolution or framerate below. All Telegram video streams will extract using these quality settings!</i>"
+                ),
+                markup=get_quality_panel_markup(),
+                message_id=query.message.id
+            )
+
+        elif data.startswith("admin_set_fps_"):
+            new_fps = data.replace("admin_set_fps_", "")
+            from core.db import set_setting
+            set_setting("fps_pref", new_fps)
+            await query.answer(f"FPS mode updated to {new_fps} FPS!", show_alert=True)
+            from core.player import get_configured_video_parameters
+            _, active_q, active_fps, _ = get_configured_video_parameters()
+            await send_styled(
+                client=client,
+                chat_id=chat_id,
+                text=(
+                    f"{ROYAL_HEADER}"
+                    f"⚡ <b>VIDEO QUALITY & FPS MANAGER ⚡</b>\n\n"
+                    f"Current Active Stream Target:\n"
+                    f"• <b>Target Quality:</b> <code>{active_q}</code>\n"
+                    f"• <b>Framerate Mode:</b> <code>{active_fps} FPS</code>\n\n"
+                    f"<i>Select your preferred resolution or framerate below. All Telegram video streams will extract using these quality settings!</i>"
+                ),
+                markup=get_quality_panel_markup(),
                 message_id=query.message.id
             )
 
