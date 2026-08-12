@@ -634,11 +634,9 @@ class PlayerManager:
                 if video_required:
                     # Constrained H.264 zerolatency WebRTC encoding: locks bitrate to 3.5Mbps, 1.0x+ speed, zero CPU lag
                     base_flags = (
-                        f"--base ---start {seek_str}-fflags +genpts -analyzeduration 4M -probesize 4M -threads 4 -thread_queue_size 1024 -vsync cfr "
+                        f"--base ---start {seek_str}-fflags +genpts -analyzeduration 4M -probesize 4M -threads 4 -thread_queue_size 1024 "
                     )
-                    # For rawvideo output (WebRTC), x264 encoder flags (-preset, -b:v) cause FFmpeg to CRASH!
-                    # Only specify pixel format. PyTgCalls automatically scales to vid_params.
-                    video_ffmpeg_flags = "--video -pix_fmt yuv420p "
+                    video_ffmpeg_flags = ""
                 else:
                     base_flags = f"--base ---start {seek_str}-analyzeduration 2M -probesize 2M -threads 2 -thread_queue_size 512 "
                     video_ffmpeg_flags = ""
