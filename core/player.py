@@ -586,8 +586,8 @@ class PlayerManager:
             seek_val = self.current_seek_offset.get(chat_id, 0)
             seek_str = f"-ss {seek_val} " if seek_val > 0 else ""
 
-            # Locks Video Parameters: 720p @ 60 FPS (HD 60fps)
-            vid_params = VideoParameters(width=1280, height=720, frame_rate=60)
+            # Locks Video Parameters: 1080p @ 60 FPS (FHD 60fps)
+            vid_params = VideoParameters(width=1920, height=1080, frame_rate=60)
             
             # ── Audio Filter Chain ───────────────────────────────────────────────
             # AUDIO-ONLY: Clean Bass Boost — Smooth, No Glitch, No Pop/Distortion
@@ -636,7 +636,9 @@ class PlayerManager:
                     base_flags = (
                         f"--base ---start {seek_str}-fflags +genpts -analyzeduration 4M -probesize 4M -threads 4 -thread_queue_size 1024 -vsync cfr "
                     )
-                    video_ffmpeg_flags = "--video -preset ultrafast -tune zerolatency -b:v 3000k -maxrate 4000k -bufsize 8000k -g 60 -pix_fmt yuv420p "
+                    # For rawvideo output (WebRTC), x264 encoder flags (-preset, -b:v) cause FFmpeg to CRASH!
+                    # Only specify pixel format. PyTgCalls automatically scales to vid_params.
+                    video_ffmpeg_flags = "--video -pix_fmt yuv420p "
                 else:
                     base_flags = f"--base ---start {seek_str}-analyzeduration 2M -probesize 2M -threads 2 -thread_queue_size 512 "
                     video_ffmpeg_flags = ""
@@ -741,7 +743,9 @@ class PlayerManager:
             if send_card and self.app and not is_seek:
                 try:
                     from plugins.controls import get_rich_control_buttons, get_rich_caption
-                    photo_url = "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1200"
+                    from core.image_helper import get_16_9_thumbnail
+                    
+                    photo_url = await get_16_9_thumbnail(song.thumbnail, song.title)
                     
                     caption = get_rich_caption(song, played_secs=0)
                     buttons = get_rich_control_buttons(chat_id, is_paused=False)
