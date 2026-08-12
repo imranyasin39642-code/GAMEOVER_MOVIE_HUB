@@ -341,7 +341,7 @@ class PlayerManager:
                     await self.app.send_message(
                         chat_id,
                         f"{INFO} <b>ǫᴜᴇᴜᴇ ғɪɴɪsʜᴇᴅ!</b>\n\n"
-                        f"Add more songs with <code>/plays &lt;song&gt;</code> {WAVE}\n"
+                        f"» Add more titles with <code>/movie &lt;title&gt;</code>\n"
                         f"{CLOCK} Bot will leave after <b>5 minutes</b> of inactivity."
                     )
                 except Exception as e:
@@ -387,7 +387,7 @@ class PlayerManager:
                     await self.app.send_message(
                         chat_id,
                         f"{WARN} <b>ᴠᴏɪᴄᴇ ᴄʜᴀᴛ ᴡᴀs ᴄʟᴏsᴇᴅ!</b>\n"
-                        f"{TRASH} Queue cleared. Start the voice chat and use <code>/plays</code> to restart. {WAVE}"
+                        f"» Queue cleared. Start the voice chat and use <code>/movie</code> to restart."
                     )
                 except Exception:
                     pass
@@ -410,7 +410,7 @@ class PlayerManager:
                     await self.app.send_message(
                         chat_id,
                         f"{WARN} <b>ᴀssɪsᴛᴀɴᴛ ʟᴇғᴛ ᴛʜᴇ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ!</b>\n"
-                        f"{TRASH} Queue cleared. Use <code>/plays</code> to start again. {WAVE}"
+                        f"» Queue cleared. Use <code>/movie</code> to start again."
                     )
                 except Exception:
                     pass

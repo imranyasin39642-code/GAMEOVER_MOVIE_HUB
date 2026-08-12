@@ -29,11 +29,11 @@ ROYAL_HEADER = "👑 <b>ɢᴀᴍᴇᴏᴠᴇʀ ᴍᴏᴠɪᴇ ʜᴜʙ</b> 👑\n
 
 def control_buttons(state: str = "play") -> InlineKeyboardMarkup:
     """Helper for basic control panel button structures (no emojis, colored)."""
-    skip_btn    = InlineKeyboardButton("SKIP",   callback_data="play_skip", style="success")
-    stop_btn    = InlineKeyboardButton("STOP",   callback_data="play_stop", style="danger")
-    pause_btn   = InlineKeyboardButton("PAUSE",  callback_data="play_pause", style="success")
-    resume_btn  = InlineKeyboardButton("RESUME", callback_data="play_resume", style="success")
-    close_btn   = InlineKeyboardButton("CLOSE",   callback_data="vcplay_close", style="danger")
+    skip_btn    = InlineKeyboardButton("» 𝗡𝗘𝗫𝗧",   callback_data="play_skip", style="success")
+    stop_btn    = InlineKeyboardButton("■ 𝗦𝗧𝗢𝗣",   callback_data="play_stop", style="danger")
+    pause_btn   = InlineKeyboardButton("II 𝗣𝗔𝗨𝗦𝗘",  callback_data="play_pause", style="success")
+    resume_btn  = InlineKeyboardButton("▷ 𝗥𝗘𝗦𝗨𝗠𝗘", callback_data="play_resume", style="success")
+    close_btn   = InlineKeyboardButton("✕ 𝗖𝗟𝗢𝗦𝗘",   callback_data="vcplay_close", style="danger")
 
     if state == "pause":
         return InlineKeyboardMarkup([[skip_btn, stop_btn, resume_btn], [close_btn]])
@@ -79,23 +79,23 @@ def get_rich_control_buttons(chat_id: int, is_paused: bool = False) -> InlineKey
         if next_season is not None and next_episode is not None:
             # No emojis! Styled
             next_ep_btn = InlineKeyboardButton(
-                f"⏭ S{next_season}E{next_episode}", 
+                f"» 𝗦{next_season}𝗘{next_episode}", 
                 callback_data=f"VODNEXT|{chat_id}|{next_season}|{next_episode}",
                 style="success"
             )
             
-    skip_btn = next_ep_btn if next_ep_btn else InlineKeyboardButton("⏭ NEXT", callback_data=f"play_skip_{chat_id}", style="success")
-    play_pause_text = "⏸ PAUSE" if not is_paused else "▶️ RESUME"
+    skip_btn = next_ep_btn if next_ep_btn else InlineKeyboardButton("» 𝗡𝗘𝗫𝗧", callback_data=f"play_skip_{chat_id}", style="success")
+    play_pause_text = "II 𝗣𝗔𝗨𝗦𝗘" if not is_paused else "▷ 𝗥𝗘𝗦𝗨𝗠𝗘"
     pause_btn = InlineKeyboardButton(play_pause_text, callback_data=f"play_pause_{chat_id}", style="success")
-    stop_btn = InlineKeyboardButton("⏹ STOP", callback_data=f"play_stop_{chat_id}", style="danger")
-    close_btn = InlineKeyboardButton("❌ CLOSE", callback_data=f"play_close_{chat_id}", style="danger")
+    stop_btn = InlineKeyboardButton("■ 𝗦𝗧𝗢𝗣", callback_data=f"play_stop_{chat_id}", style="danger")
+    close_btn = InlineKeyboardButton("✕ 𝗖𝗟𝗢𝗦𝗘", callback_data=f"play_close_{chat_id}", style="danger")
 
-    seek_back_10 = InlineKeyboardButton("⏪ -10s", callback_data=f"play_seek_-10_{chat_id}", style="primary")
-    seek_fwd_10 = InlineKeyboardButton("⏩ +10s", callback_data=f"play_seek_10_{chat_id}", style="primary")
-    seek_back_5m = InlineKeyboardButton("⏪ -5M", callback_data=f"play_seek_-300_{chat_id}", style="primary")
-    seek_fwd_5m = InlineKeyboardButton("⏩ +5M", callback_data=f"play_seek_300_{chat_id}", style="primary")
+    seek_back_10 = InlineKeyboardButton("« -𝟭𝟬𝘀", callback_data=f"play_seek_-10_{chat_id}", style="primary")
+    seek_fwd_10 = InlineKeyboardButton("» +𝟭𝟬𝘀", callback_data=f"play_seek_10_{chat_id}", style="primary")
+    seek_back_5m = InlineKeyboardButton("« -𝟱𝗠", callback_data=f"play_seek_-300_{chat_id}", style="primary")
+    seek_fwd_5m = InlineKeyboardButton("» +𝟱𝗠", callback_data=f"play_seek_300_{chat_id}", style="primary")
 
-    download_btn = InlineKeyboardButton("📥 SAVE", callback_data=f"play_download_{chat_id}", style="success")
+    download_btn = InlineKeyboardButton("⭳ 𝗦𝗔𝗩𝗘", callback_data=f"play_download_{chat_id}", style="success")
 
     # Clean 4-Buttons-Per-Row Grid Layout
     return InlineKeyboardMarkup([
@@ -117,20 +117,19 @@ def get_rich_caption(song, played_secs: int = 0) -> str:
         index = int(percent * bar_length)
         index = max(0, min(index, bar_length - 1))
         bar = ["━"] * bar_length
-        bar[index] = "🔘"
+        bar[index] = "●"
         bar_str = "".join(bar)
     else:
-        bar_str = "━🔘━━━━━━━━━━━━"
+        bar_str = "━●━━━━━━━━━━━━"
         
     is_vod = (getattr(song, "uploader", "") == "MOVIES Engine") or (song.duration == "VOD")
     title_display = f"<code>{song.title}</code>" if is_vod else f"<a href='{song.webpage_url}'>{song.title}</a>"
     
     return (
         f"{ROYAL_HEADER}"
-        f"<emoji id='5330273431898318607'>⚡</emoji> <b>ɴᴏᴡ sᴛʀᴇᴀᴍɪɴɢ</b> <emoji id='5330273431898318607'>⚡</emoji>\n\n"
-        f"{LINK} <b>Title:</b> {title_display}\n"
-        f"{CLOCK} <b>Duration:</b> <code>{played_time}</code> {bar_str} <code>{total_time}</code>\n"
-        f"{USER} <b>Requested by:</b> <code>{song.requested_by}</code>"
+        f"» <b>Title:</b> {title_display}\n"
+        f"» <b>Duration:</b> <code>{played_time}</code> {bar_str} <code>{total_time}</code>\n"
+        f"» <b>Requested by:</b> <code>{song.requested_by}</code>"
     )
 
 
@@ -222,7 +221,7 @@ def register(app: Client):
         await message.reply_text(
             f"{ROYAL_HEADER}"
             f"{STOP_E} <b>Playback stopped.</b>\n"
-            f"{TRASH} Queue cleared. Use <code>/plays</code> to start again!",
+            f"» Queue cleared. Use <code>/movie</code> to start again!",
             parse_mode=enums.ParseMode.HTML
         )
 
@@ -332,7 +331,7 @@ def register(app: Client):
             await message.reply_text(
                 f"{ROYAL_HEADER}"
                 f"{INFO} <b>Nothing is playing right now.</b>\n"
-                f"Use <code>/plays &lt;song&gt;</code> to start! {WAVE}",
+                f"Use <code>/movie &lt;title&gt;</code> to start!",
                 parse_mode=enums.ParseMode.HTML
             )
             return
