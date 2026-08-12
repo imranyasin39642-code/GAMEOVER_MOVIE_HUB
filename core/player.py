@@ -808,7 +808,7 @@ class PlayerManager:
             asyncio.create_task(delayed_clean_cached_file(old_local, delay=get_cleanup_delay(None)))
             
         try:
-            await self._pytg.leave_call(chat_id)
+            await asyncio.wait_for(self._pytg.leave_call(chat_id), timeout=3.0)
         except Exception:
             pass
 
