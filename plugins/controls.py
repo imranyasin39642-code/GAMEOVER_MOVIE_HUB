@@ -84,25 +84,23 @@ def get_rich_control_buttons(chat_id: int, is_paused: bool = False) -> InlineKey
                 style="success"
             )
             
-    skip_btn = next_ep_btn if next_ep_btn else InlineKeyboardButton("⏭ SKIP NEXT", callback_data=f"play_skip_{chat_id}", style="success")
+    skip_btn = next_ep_btn if next_ep_btn else InlineKeyboardButton("⏭ NEXT", callback_data=f"play_skip_{chat_id}", style="success")
     play_pause_text = "⏸ PAUSE" if not is_paused else "▶️ RESUME"
     pause_btn = InlineKeyboardButton(play_pause_text, callback_data=f"play_pause_{chat_id}", style="success")
     stop_btn = InlineKeyboardButton("⏹ STOP", callback_data=f"play_stop_{chat_id}", style="danger")
     close_btn = InlineKeyboardButton("❌ CLOSE", callback_data=f"play_close_{chat_id}", style="danger")
-    
+
     seek_back_10 = InlineKeyboardButton("⏪ -10s", callback_data=f"play_seek_-10_{chat_id}", style="primary")
     seek_fwd_10 = InlineKeyboardButton("⏩ +10s", callback_data=f"play_seek_10_{chat_id}", style="primary")
     seek_back_5m = InlineKeyboardButton("⏪ -5M", callback_data=f"play_seek_-300_{chat_id}", style="primary")
     seek_fwd_5m = InlineKeyboardButton("⏩ +5M", callback_data=f"play_seek_300_{chat_id}", style="primary")
-    
-    # Download Button
-    download_btn = InlineKeyboardButton("📥 DOWNLOAD", callback_data=f"play_download_{chat_id}", style="success")
-    
-    # Returns the exact responsive layout designed to prevent narrow screen squishing
+
+    download_btn = InlineKeyboardButton("📥 SAVE", callback_data=f"play_download_{chat_id}", style="success")
+
+    # Clean 4-Buttons-Per-Row Grid Layout
     return InlineKeyboardMarkup([
-        [seek_back_10, pause_btn, seek_fwd_10],
-        [seek_back_5m, stop_btn, seek_fwd_5m],
-        [skip_btn, download_btn],
+        [seek_back_10, pause_btn, seek_fwd_10, skip_btn],
+        [seek_back_5m, stop_btn, seek_fwd_5m, download_btn],
         [close_btn]
     ])
 

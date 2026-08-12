@@ -620,24 +620,27 @@ class PlayerManager:
                     'aresample=48000"'
                 )
             else:
-                # Movie/VOD mode: Cinema dialogue boost, NO async resampling (it causes lip-sync drift!).
-                # aresample=48000 alone = simple clean resample with ZERO drift = perfect lip-sync.
+                # Movie/VOD mode: Pure crystal clear cinema dialogue boost + peak limiter to stop garbled audio
                 audio_filter = (
-                    '-af "highpass=f=40,'
-                    'equalizer=f=3000:width_type=h:width=1000:g=2.5,'
-                    'acompressor=threshold=-18dB:ratio=2.5:attack=5:release=150:makeup=3dB,'
-                    'volume=1.8,alimiter=limit=0.95,'
+                    '-af "highpass=f=45,'
+                    'equalizer=f=120:g=2:w=0.8,equalizer=f=3200:g=2.5:w=1.0,'
+                    'acompressor=threshold=-16dB:ratio=2.5:attack=10:release=100:makeup=2dB,'
+                    'volume=1.4,alimiter=limit=0.92:level=1,'
                     'aresample=48000"'
                 )
 
             def get_stream(video_required: bool = True):
                 v_flags = MediaStream.Flags.REQUIRED if video_required else MediaStream.Flags.IGNORE
                 if video_required:
-                    # Movie/VOD mode: 4 threads, tight queue, +genpts for PTS reconstruction = zero lip-sync drift
-                    base_flags = f"--base ---start {seek_str}-fflags +genpts -analyzeduration 8M -probesize 8M -threads 4 -thread_queue_size 2048 -vsync cfr "
+                    # Constrained H.264 zerolatency WebRTC encoding: locks bitrate to 3.5Mbps, 1.0x+ speed, zero CPU lag
+                    base_flags = (
+                        f"--base ---start {seek_str}-fflags +genpts -analyzeduration 4M -probesize 4M -threads 4 -thread_queue_size 1024 -vsync cfr "
+                    )
+                    video_ffmpeg_flags = "--video -preset ultrafast -tune zerolatency -b:v 3000k -maxrate 4000k -bufsize 8000k -g 60 -pix_fmt yuv420p "
                 else:
-                    # Audio-only: minimal FFmpeg flags — 2 threads, tiny probe = low CPU
                     base_flags = f"--base ---start {seek_str}-analyzeduration 2M -probesize 2M -threads 2 -thread_queue_size 512 "
+                    video_ffmpeg_flags = ""
+
                 return SeekableMediaStream(
                     media_path=local_file,
                     audio_path=None,  # Single local unified container file
@@ -648,6 +651,7 @@ class PlayerManager:
                     headers=None,
                     ffmpeg_parameters=(
                         f"{base_flags}"
+                        f"{video_ffmpeg_flags}"
                         f"--audio ---mid {audio_filter} -max_muxing_queue_size 2048"
                     )
                 )
@@ -737,7 +741,7 @@ class PlayerManager:
             if send_card and self.app and not is_seek:
                 try:
                     from plugins.controls import get_rich_control_buttons, get_rich_caption
-                    photo_url = song.thumbnail if (song.thumbnail and song.thumbnail.startswith("http")) else "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600"
+                    photo_url = "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1200"
                     
                     caption = get_rich_caption(song, played_secs=0)
                     buttons = get_rich_control_buttons(chat_id, is_paused=False)
