@@ -10,6 +10,20 @@ import io
 import asyncio
 import os
 import inspect
+import sqlite3
+
+# Global SQLite patch to prevent "database is locked" errors in Pyrogram session & local DBs
+_orig_sqlite_connect = sqlite3.connect
+def _patched_sqlite_connect(*args, **kwargs):
+    kwargs.setdefault("timeout", 30.0)
+    conn = _orig_sqlite_connect(*args, **kwargs)
+    try:
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA busy_timeout=30000;")
+    except Exception:
+        pass
+    return conn
+sqlite3.connect = _patched_sqlite_connect
 
 # Dynamic module wrappers to prevent pytgcalls import errors on standard/fork pyrogram versions
 import pyrogram.errors
